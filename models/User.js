@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const turnoSemanal = require('./TurnoSemanal');
+const TurnoMensual = require('./TurnoMensual')
 
 const userSchema = new mongoose.Schema(
   {
@@ -11,8 +13,10 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ['Admin', 'Profesor', 'Violeta', 'Azul', 'Blanco'], required: true },
     
     // 🔄 Nuevos campos
-    turnosSemanales: [{ type: mongoose.Schema.Types.ObjectId, ref: 'turnoSemanal' }],
+    turnosSemanales: [{ type: mongoose.Schema.Types.ObjectId, ref: 'TurnoSemanal' }],
     turnosMensuales: [{ type: mongoose.Schema.Types.ObjectId, ref: 'TurnoMensual' }],
+
+     
     
     creditos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Credito' }],
     activo: { type: Boolean, default: true },

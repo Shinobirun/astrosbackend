@@ -2,20 +2,19 @@ const express = require('express');
 const {
   getTurnosDisponibles,
   liberarTurno,
-  tomarTurno,
   getTurnoById,
   crearTurno,
   getTodosLosTurnos,
   eliminarTurno,
   asignarTurnoManual
-} = require('../controllers/turnoControllersSemanal').default;
+} = require('../controllers/turnoControllersSemanal');
 
 const { protect, adminOrProfesor } = require('../middleware/autMiddleware');
 
 const router = express.Router();
 
 // ✅ Rutas accesibles para cualquier usuario logueado
-router.get('/', protect, getTurnosDisponibles);       // Ver turnos disponibles
+router.get('/sema', protect, getTurnosDisponibles);       // Ver turnos disponibles
 router.get('/turno/:id', protect, getTurnoById);      // Ver un turno específico
 
 // 🔒 Rutas solo para Admins o Profesores

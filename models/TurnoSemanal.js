@@ -49,4 +49,4 @@ turnoSemanalSchema.pre('save', function (next) {
   next();
 });
 
-module.exports = mongoose.model('turnoSemanal', turnoSemanalSchema);
+module.exports = mongoose.model('TurnoSemanal', turnoSemanalSchema);

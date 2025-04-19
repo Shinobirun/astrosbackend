@@ -77,7 +77,7 @@ const liberarTurno = async (req, res) => {
 
 
 
-// Tomar un turno
+/* Tomar un turno
 const tomarTurno = async (req, res) => {
   const { turnoId, userId } = req.body;
 
@@ -125,7 +125,7 @@ const tomarTurno = async (req, res) => {
     res.status(500).json({ message: 'Error al tomar turno' });
   }
 };
-
+*/
 
 
 
@@ -293,7 +293,7 @@ const asignarTurnoManual = async (req, res) => {
 module.exports = { 
   getTurnosDisponibles, 
   liberarTurno, 
-  tomarTurno, 
+  //tomarTurno, 
   getTurnosPorUsuario,
   getTurnoById,
   crearTurno,  
