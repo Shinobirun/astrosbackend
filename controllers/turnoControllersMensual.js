@@ -48,7 +48,7 @@ const liberarTurno = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    user.turnosTomados = user.turnosTomados.filter(tid => tid.toString() !== turnoId);
+    user.turnosMensuales = user.turnosMensuales.filter(tid => tid.toString() !== turnoId);
     await user.save();
 
     res.status(200).json({ message: 'Turno liberado correctamente' });
@@ -112,13 +112,13 @@ const tomarTurno = async (req, res) => {
 const getTurnosPorUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const usuario = await User.findById(id).populate('turnosTomados');
+    const usuario = await User.findById(id).populate('turnosMensuales');
 
     if (!usuario) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    res.json(usuario.turnosTomados);
+    res.json(usuario.turnosMensuales);
   } catch (error) {
     res.status(500).json({ message: 'Error obteniendo los turnos', error: error.message });
   }
@@ -213,7 +213,7 @@ const asignarTurnoManual = async (req, res) => {
     const turno = await Turno.findById(turnoId);
     if (!turno) return res.status(404).json({ message: 'Turno no encontrado' });
 
-    if (!turno.ocupadoPor) {
+    if (!Array.isArray(turno.ocupadoPor)) {
       turno.ocupadoPor = [];
     }
 
@@ -231,16 +231,24 @@ const asignarTurnoManual = async (req, res) => {
     const usuario = await User.findById(userId);
     if (!usuario) return res.status(404).json({ message: 'Usuario no encontrado' });
 
-    if (!usuario.turnosTomados.includes(turnoId)) {
-      usuario.turnosTomados.push(turnoId);
+    if (!Array.isArray(usuario.turnosMensuales)) {
+      usuario.turnosMensuales = [];
+    }
+
+    const turnoIdStr = turnoId.toString();
+    if (!usuario.turnosMensuales.some(id => id.toString() === turnoIdStr)) {
+      usuario.turnosMensuales.push(turnoId);
       await usuario.save();
     }
 
     res.status(200).json({ message: 'Turno asignado correctamente' });
   } catch (error) {
+    console.error('Error al asignar turno manualmente:', error);
     res.status(500).json({ message: 'Error al asignar turno manualmente', error: error.message });
   }
 };
+
+
 
 module.exports = {
   getTurnosDisponibles,
