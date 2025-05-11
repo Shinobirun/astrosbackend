@@ -140,7 +140,7 @@ const getTurnoById = async (req, res) => {
 // Crear turno
 const crearTurno = async (req, res) => {
   try {
-    const { sede, nivel, dia, hora } = req.body;
+    const { sede, nivel, dia, hora, cuposDisponibles } = req.body;
 
     if (!sede || !nivel || !dia || !hora) {
       return res.status(400).json({ message: 'Todos los campos son obligatorios' });
@@ -156,7 +156,7 @@ const crearTurno = async (req, res) => {
       nivel,
       dia,
       hora,
-      cuposDisponibles: CUPOS_POR_SEDE[sede] || 0
+      cuposDisponibles: cuposDisponibles !== undefined ? cuposDisponibles : (CUPOS_POR_SEDE[sede] || 0)
     });
 
     await nuevoTurno.save();
@@ -166,6 +166,7 @@ const crearTurno = async (req, res) => {
     res.status(500).json({ message: 'Error al crear el turno', error: error.message });
   }
 };
+
 
 // Obtener todos los turnos
 const getTodosLosTurnos = async (req, res) => {

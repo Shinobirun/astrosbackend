@@ -31,7 +31,7 @@ const turnoRouteSema= require('./routes/turnoRouSema.js')
 app.use('/api/users', userRoutes);
 app.use('/api/turnos', turnoRoutes);
 app.use('/api/creditos', creditoRoutes);
-app.use('/api/turnoRouSema',turnoRouteSema)
+app.use('/api/turnosSemanales',turnoRouteSema)
 
 // Iniciar Servidor
 app.listen(PORT, () => console.log(`Servidor corriendo en el puerto ${PORT}`));
