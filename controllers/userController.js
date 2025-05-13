@@ -2,6 +2,8 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const Credito = require('../models/creditos');
+const TurnoSemanal = require('../models/TurnoSemanal');
+const TurnoMensual = require('../models/TurnoMensual');
 
 // Generar un token JWT
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -93,14 +95,6 @@ const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
       .populate({
-        path: 'turnosSemanales',
-        select: 'sede nivel dia hora cuposDisponibles activo expiraEn',
-      })
-      .populate({
-        path: 'turnosMensuales',
-        select: 'sede nivel dias horario cupos',
-      })
-      .populate({
         path: 'creditos',
         match: { usado: false, venceEn: { $gt: new Date() } },
         select: '_id createdAt venceEn',
@@ -110,6 +104,17 @@ const getUserProfile = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
+    // Buscar turnos donde el usuario esté en el array ocupadoPor
+    const turnosSemanales = await TurnoSemanal.find({
+      ocupadoPor: req.user.id,
+      activo: true,
+    });
+
+    const turnosMensuales = await TurnoMensual.find({
+      ocupadoPor: req.user.id,
+      activo: true,
+    });
+
     res.json({
       _id: user.id,
       username: user.username,
@@ -118,8 +123,8 @@ const getUserProfile = async (req, res) => {
       role: user.role,
       email: user.email,
       creditos: user.creditos,
-      turnosSemanales: user.turnosSemanales,
-      turnosMensuales: user.turnosMensuales,
+      turnosSemanales,
+      turnosMensuales,
       activo: user.activo,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -130,6 +135,7 @@ const getUserProfile = async (req, res) => {
     res.status(500).json({ message: 'Error al obtener el perfil del usuario' });
   }
 };
+
 
 // Actualizar perfil del usuario
 const updateUserProfile = async (req, res) => {
@@ -197,10 +203,49 @@ const getAllUsers = async (req, res) => {
         select: '_id createdAt venceEn usado',
       });
 
+    console.log('Usuarios con populate:', users);
     res.json(users);
   } catch (error) {
     console.error('Error al obtener usuarios:', error);
     res.status(500).json({ message: 'Error al obtener los usuarios' });
+  }
+};
+
+//turnos semanales y mensuales
+
+const getTurnosSemanalesPorUsuario = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    // Buscamos el usuario y poblamos solo los semanales
+    const user = await User.findById(userId).populate({
+      path: 'turnosSemanales',
+      match: { activo: true },
+    });
+
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    res.json(user.turnosSemanales);
+  } catch (error) {
+    console.error('Error al obtener turnos semanales:', error);
+    res.status(500).json({ message: 'Error al obtener turnos semanales' });
+  }
+};
+
+const getTurnosMensualesPorUsuario = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    // Buscamos el usuario y poblamos solo los mensuales
+    const user = await User.findById(userId).populate({
+      path: 'turnosMensuales',
+      match: { activo: true },
+    });
+
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    res.json(user.turnosMensuales);
+  } catch (error) {
+    console.error('Error al obtener turnos mensuales:', error);
+    res.status(500).json({ message: 'Error al obtener turnos mensuales' });
   }
 };
 
@@ -211,4 +256,6 @@ module.exports = {
   updateUserProfile,
   desactivarUsuario,
   getAllUsers,
+  getTurnosSemanalesPorUsuario,
+  getTurnosMensualesPorUsuario,
 };
