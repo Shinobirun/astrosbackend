@@ -137,19 +137,43 @@ const getUserProfile = async (req, res) => {
 };
 
 
-// Actualizar perfil del usuario
+// Actualizar perfil del usuario (ahora sirve para sí mismo o, si es Admin/Profesor, para cualquier id)
 const updateUserProfile = async (req, res) => {
-  const { firstName, lastName, creditos, turnosSemanales, turnosMensuales } = req.body;
+  const {
+    id: targetUserId,   // opcional: para Admin/Profesor
+    username,
+    firstName,
+    lastName,
+    role,
+    creditos,
+    turnosSemanales,
+    turnosMensuales,
+  } = req.body;
 
   try {
-    const user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+    // Decidimos a quién le aplicamos el cambio:
+    // Si soy Admin/Profesor y me mandan targetUserId, lo uso; si no, uso req.user.id
+    let userIdToUpdate = req.user.id;
+    if (
+      (req.user.role === "Admin" || req.user.role === "Profesor") &&
+      targetUserId
+    ) {
+      userIdToUpdate = targetUserId;
     }
 
+    const user = await User.findById(userIdToUpdate);
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    // Campos permitidos
+    if (username) user.username = username;
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
+    // Solo Admin/Profesor puede cambiar rol
+    if (role && (req.user.role === "Admin" || req.user.role === "Profesor")) {
+      user.role = role;
+    }
     if (creditos) user.creditos = creditos;
     if (turnosSemanales) user.turnosSemanales = turnosSemanales;
     if (turnosMensuales) user.turnosMensuales = turnosMensuales;
@@ -167,10 +191,11 @@ const updateUserProfile = async (req, res) => {
       turnosMensuales: user.turnosMensuales,
     });
   } catch (error) {
-    console.error('Error al actualizar perfil de usuario:', error);
-    res.status(500).json({ message: 'Error al actualizar perfil de usuario' });
+    console.error("Error al actualizar perfil de usuario:", error);
+    res.status(500).json({ message: "Error al actualizar perfil de usuario" });
   }
 };
+
 
 // Desactivar o reactivar usuario
 const desactivarUsuario = async (req, res) => {
