@@ -51,12 +51,17 @@ const liberarTurno = async (req, res) => {
     user.turnosMensuales = user.turnosMensuales.filter(tid => tid.toString() !== turnoId);
     await user.save();
 
-    res.status(200).json({ message: 'Turno liberado correctamente' });
+    // 👉 Crear un nuevo crédito para el usuario
+    const nuevoCredito = new Credito({ usuario: idUsuario });
+    await nuevoCredito.save();
+
+    res.status(200).json({ message: 'Turno liberado correctamente y crédito creado' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error al liberar el turno' });
   }
 };
+
 
 // Tomar turno (comentado por ahora)
 /*
