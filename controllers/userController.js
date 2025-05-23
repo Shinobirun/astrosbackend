@@ -5,8 +5,15 @@ const Credito = require('../models/creditos');
 const TurnoSemanal = require('../models/TurnoSemanal');
 const TurnoMensual = require('../models/TurnoMensual');
 
-// Generar un token JWT
-const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+const jwt = require('jsonwebtoken');
+
+const generateToken = (id) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET no está definido en las variables de entorno');
+  }
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+};
+
 
 // Registrar o reactivar un usuario
 const registerUser = async (req, res) => {
@@ -281,4 +288,5 @@ module.exports = {
   getAllUsers,
   getTurnosSemanalesPorUsuario,
   getTurnosMensualesPorUsuario,
+  generateToken
 };

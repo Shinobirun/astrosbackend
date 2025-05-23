@@ -34,3 +34,4 @@ app.use('/api/turnosSemanales', turnoRouteSema);
 
 // Iniciar Servidor
 app.listen(PORT, () => console.log(`Servidor corriendo en el puerto ${PORT}`));
+console.log('JWT_SECRET:', process.env.JWT_SECRET);
