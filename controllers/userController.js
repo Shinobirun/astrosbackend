@@ -5,15 +5,13 @@ const Credito = require('../models/creditos');
 const TurnoSemanal = require('../models/TurnoSemanal');
 const TurnoMensual = require('../models/TurnoMensual');
 
-const jwt = require('jsonwebtoken');
-
+// Función para generar JWT
 const generateToken = (id) => {
   if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET no está definido en las variables de entorno');
   }
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
-
 
 // Registrar o reactivar un usuario
 const registerUser = async (req, res) => {
@@ -111,7 +109,6 @@ const getUserProfile = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    // Buscar turnos donde el usuario esté en el array ocupadoPor
     const turnosSemanales = await TurnoSemanal.find({
       ocupadoPor: req.user.id,
       activo: true,
@@ -143,8 +140,7 @@ const getUserProfile = async (req, res) => {
   }
 };
 
-
-// Actualizar perfil del usuario (ahora también acepta password)
+// Actualizar perfil del usuario
 const updateUserProfile = async (req, res) => {
   const {
     id: targetUserId,
@@ -152,7 +148,7 @@ const updateUserProfile = async (req, res) => {
     firstName,
     lastName,
     role,
-    password,            // <= agregamos
+    password,
     creditos,
     turnosSemanales,
     turnosMensuales,
@@ -176,9 +172,7 @@ const updateUserProfile = async (req, res) => {
     if (role && (req.user.role === "Admin" || req.user.role === "Profesor")) {
       user.role = role;
     }
-    if (password) {
-      user.password = password;   // <= se hasheará en el pre('save')
-    }
+    if (password) user.password = password;
     if (creditos) user.creditos = creditos;
     if (turnosSemanales) user.turnosSemanales = turnosSemanales;
     if (turnosMensuales) user.turnosMensuales = turnosMensuales;
@@ -201,16 +195,13 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
-
-// Desactivar o reactivar usuario
+// Activar/desactivar usuario
 const desactivarUsuario = async (req, res) => {
   const { userId } = req.body;
 
   try {
     const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 
     user.activo = !user.activo;
     await user.save();
@@ -233,7 +224,6 @@ const getAllUsers = async (req, res) => {
         select: '_id createdAt venceEn usado',
       });
 
-    console.log('Usuarios con populate:', users);
     res.json(users);
   } catch (error) {
     console.error('Error al obtener usuarios:', error);
@@ -241,12 +231,10 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-//turnos semanales y mensuales
-
+// Obtener turnos semanales por usuario
 const getTurnosSemanalesPorUsuario = async (req, res) => {
   try {
     const userId = req.params.id;
-    // Buscamos el usuario y poblamos solo los semanales
     const user = await User.findById(userId).populate({
       path: 'turnosSemanales',
       match: { activo: true },
@@ -261,10 +249,10 @@ const getTurnosSemanalesPorUsuario = async (req, res) => {
   }
 };
 
+// Obtener turnos mensuales por usuario
 const getTurnosMensualesPorUsuario = async (req, res) => {
   try {
     const userId = req.params.id;
-    // Buscamos el usuario y poblamos solo los mensuales
     const user = await User.findById(userId).populate({
       path: 'turnosMensuales',
       match: { activo: true },
@@ -288,5 +276,4 @@ module.exports = {
   getAllUsers,
   getTurnosSemanalesPorUsuario,
   getTurnosMensualesPorUsuario,
-  generateToken
 };
