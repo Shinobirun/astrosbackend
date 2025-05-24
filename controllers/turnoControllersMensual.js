@@ -3,7 +3,7 @@ const User = require('../models/User');
 const Credito = require('../models/creditos');
 const mongoose = require('mongoose');
 
-// Listar turnos disponibles
+/* Listar turnos disponibles
 const getTurnosDisponibles = async (req, res) => {
   try {
     const turnos = await Turno.find({
@@ -14,7 +14,21 @@ const getTurnosDisponibles = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener los turnos', error: error.message });
   }
+}; */
+
+const getTurnosDisponibles = async (req, res) => {
+  try {
+    const turnos = await Turno.find({
+      $expr: { $lt: [{ $size: '$ocupadoPor' }, '$cuposDisponibles'] },
+      activo: true
+    }).populate('ocupadoPor', 'firstName lastName role'); // solo los campos que quieras mostrar
+
+    res.json(turnos);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener los turnos', error: error.message });
+  }
 };
+
 
 // Liberar turno
 const liberarTurno = async (req, res) => {
