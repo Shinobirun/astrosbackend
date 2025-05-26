@@ -24,6 +24,8 @@ const getTurnosDisponibles = async (req, res) => {
     }).populate('ocupadoPor', 'firstName lastName role');
 
     console.log('Turnos con populate:', JSON.stringify(turnos, null, 2));
+    console.log('Turnos sin stringify:', turnos);
+    console.log('Primer ocupadoPor:', turnos[0]?.ocupadoPor);
 
     res.json(turnos);
   } catch (error) {
