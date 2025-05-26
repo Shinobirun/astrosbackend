@@ -31,11 +31,10 @@ const turnoMensualSchema = new mongoose.Schema({
     required: true,
     min: [1, 'Debe haber al menos 1 cupo disponible'], // Validación de mínimo 1
   },
-  ocupadoPor: {
-    type: [mongoose.Schema.Types.ObjectId],
-    ref: 'User',
-    default: [],
-  },
+  ocupadoPor: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   activo: {
     type: Boolean,
     default: true,
