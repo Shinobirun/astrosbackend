@@ -95,6 +95,36 @@ const loginUser = async (req, res) => {
   }
 };
 
+//buscar por id
+
+const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).populate('creditos');
+
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    res.json({
+      _id: user.id,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      email: user.email,
+      creditos: user.creditos,
+      activo: user.activo,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
+  } catch (error) {
+    console.error('Error al obtener usuario por ID:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+module.exports = { getUserById };
+
 // Obtener perfil del usuario
 const getUserProfile = async (req, res) => {
   try {
@@ -276,4 +306,5 @@ module.exports = {
   getAllUsers,
   getTurnosSemanalesPorUsuario,
   getTurnosMensualesPorUsuario,
+  getUserById
 };
