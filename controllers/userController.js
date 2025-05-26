@@ -95,15 +95,29 @@ const loginUser = async (req, res) => {
   }
 };
 
-//buscar por id
-
+// Obtener un usuario por ID
 const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).populate('creditos');
+    const user = await User.findById(req.params.id)
+      .populate({
+        path: 'creditos',
+        match: { usado: false, venceEn: { $gt: new Date() } },
+        select: '_id createdAt venceEn',
+      });
 
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
+
+    const turnosSemanales = await TurnoSemanal.find({
+      ocupadoPor: user._id,
+      activo: true,
+    });
+
+    const turnosMensuales = await TurnoMensual.find({
+      ocupadoPor: user._id,
+      activo: true,
+    });
 
     res.json({
       _id: user.id,
@@ -112,18 +126,15 @@ const getUserById = async (req, res) => {
       lastName: user.lastName,
       role: user.role,
       email: user.email,
-      creditos: user.creditos,
-      activo: user.activo,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      
     });
   } catch (error) {
     console.error('Error al obtener usuario por ID:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    res.status(500).json({ message: 'Error al obtener el usuario' });
   }
 };
 
-module.exports = { getUserById };
+
 
 // Obtener perfil del usuario
 const getUserProfile = async (req, res) => {
