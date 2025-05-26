@@ -21,10 +21,13 @@ const getTurnosDisponibles = async (req, res) => {
     const turnos = await Turno.find({
       $expr: { $lt: [{ $size: '$ocupadoPor' }, '$cuposDisponibles'] },
       activo: true
-    }).populate('ocupadoPor', 'firstName lastName role'); // solo los campos que quieras mostrar
+    }).populate('ocupadoPor', 'firstName lastName role');
+
+    console.log('Turnos con populate:', JSON.stringify(turnos, null, 2));
 
     res.json(turnos);
   } catch (error) {
+    console.error('Error:', error);
     res.status(500).json({ message: 'Error al obtener los turnos', error: error.message });
   }
 };
