@@ -2,8 +2,11 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const inicializarTurnosBase = require('./scripts/iniciadorTurnosBase.js');
+const cron = require('node-cron');
 
+const TurnoSemanal = require('./models/TurnoSemanal');
+const TurnoMensual = require('./models/TurnoMensual');
+const inicializarTurnosBase = require('./scripts/iniciadorTurnosBase.js');
 const connectDB = require('./config/db');
 
 const app = express();
@@ -19,6 +22,32 @@ connectDB().then(async () => {
   
   // Inicializar los turnos base
   await inicializarTurnosBase();
+
+  // 🔁 CRON: Todos los domingos a las 00:00
+  process.env.TZ = 'America/Argentina/Buenos_Aires';
+  cron.schedule('0 20 * * 1', async () => {
+    try {
+      console.log(`[${new Date().toLocaleString()}] ⏳ Sincronizando turnos semanales...`);
+      await TurnoSemanal.deleteMany();
+      const turnosMensuales = await TurnoMensual.find();
+
+      for (const turno of turnosMensuales) {
+        await new TurnoSemanal({
+          turnoMensualId: turno._id,
+          sede: turno.sede,
+          nivel: turno.nivel,
+          dia: turno.dia,
+          hora: turno.hora,
+          cuposDisponibles: turno.cuposDisponibles,
+          activo: turno.activo,
+        }).save();
+      }
+
+      console.log('✔️ Turnos semanales sincronizados');
+    } catch (error) {
+      console.error('❌ Error durante sincronización:', error);
+    }
+  });
 });
 
 // Rutas
