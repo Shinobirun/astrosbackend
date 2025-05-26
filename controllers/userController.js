@@ -317,5 +317,5 @@ module.exports = {
   getAllUsers,
   getTurnosSemanalesPorUsuario,
   getTurnosMensualesPorUsuario,
-  getUserById
+  getUserById,
 };
