@@ -18,7 +18,7 @@ router.put('/deactivate', protect, desactivarUsuario);
 // Rutas protegidas para ver todos los usuarios y turnos (solo Admin o Profesor)
 router.get('/usuarios', protect, adminOrProfesor, getAllUsers);  // Admin/Profesor pueden ver todos los usuarios
 router.get("/turnos", protect, adminOrProfesor, getTurnosPorUsuario); // Admin/Profesor pueden ver todos los turnos
-router.get('/:id', getUserById);
+router.get('/:id', protect, getUserById);
 
 
 // Rutas protegidas para obtener turnos de un usuario específico
