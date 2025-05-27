@@ -3,7 +3,6 @@ const {
   getTurnosDisponibles,
   liberarTurno,
   getTurnoById,
-  crearTurno,
   getTodosLosTurnos,
   eliminarTurno,
   asignarTurnoManual,
@@ -22,7 +21,7 @@ router.get('/semanales/disponibles', protect, getTurnosSemanalesDisponibles);
 
 // 🔒 Rutas solo para Admins o Profesores
 router.get('/todoSema', protect, adminOrProfesor, getTodosLosTurnos);  // Ver todos los turnos
-router.post('/Sema', protect, adminOrProfesor, crearTurno);             // Crear nuevo turno
+
 router.put('/liberarSema', protect, adminOrProfesor, liberarTurno);     // Liberar un turno
 router.post('/asignarSema', protect, adminOrProfesor, asignarTurnoManual);        // Tomar un turno
 router.delete('/Sema/:id', protect, adminOrProfesor, eliminarTurno);     // Eliminar un turno
