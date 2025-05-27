@@ -182,13 +182,13 @@ const getTurnosSemanalesDisponibles = async (req, res) => {
 
     switch (rol) {
       case 'blanco':
-        nivelesPermitidos = ['Principiantes'];
+        nivelesPermitidos = ['Blanco'];
         break;
       case 'azul':
-        nivelesPermitidos = ['Principiantes', 'Intermedios'];
+        nivelesPermitidos = ['Blanco', 'Azul'];
         break;
       case 'violeta':
-        nivelesPermitidos = ['Intermedios', 'Avanzados'];
+        nivelesPermitidos = ['Azul', 'Violeta'];
         break;
       default:
         // Admin y Profesor ven todo
