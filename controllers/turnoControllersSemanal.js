@@ -267,6 +267,39 @@ const asignarTurnoManual = async (req, res) => {
   }
 };
 
+const getTurnosSemanalesDisponibles = async (req, res) => {
+  try {
+    const rol = req.user.rol; // Supone que el middleware de auth carga el usuario en req.user
+    let nivelesPermitidos = [];
+
+    switch (rol) {
+      case 'blanco':
+        nivelesPermitidos = ['Principiantes'];
+        break;
+      case 'azul':
+        nivelesPermitidos = ['Principiantes', 'Intermedios'];
+        break;
+      case 'violeta':
+        nivelesPermitidos = ['Intermedios', 'Avanzados'];
+        break;
+      default:
+        // Admin y Profesor ven todo
+        const turnos = await Turno.find({ tipo: 'semanal' });
+        return res.json(turnos);
+    }
+
+    const turnos = await Turno.find({
+      tipo: 'semanal',
+      nivel: { $in: nivelesPermitidos },
+      cuposDisponibles: { $gt: 0 },
+    });
+
+    res.json(turnos);
+  } catch (error) {
+    console.error("Error obteniendo turnos disponibles:", error);
+    res.status(500).json({ error: 'Error al obtener turnos disponibles' });
+  }
+};
 
 
 module.exports = {
@@ -278,5 +311,6 @@ module.exports = {
   getTodosLosTurnos,
   eliminarTurno,
   asignarTurnoManual,
+  getTurnosSemanalesDisponibles,
   // tomarTurno // Solo si lo necesitas descomentar
 };
