@@ -3,19 +3,6 @@ const User = require('../models/User');
 const Credito = require('../models/creditos');
 const mongoose = require('mongoose');
 
-/* Listar turnos disponibles
-const getTurnosDisponibles = async (req, res) => {
-  try {
-    const turnos = await Turno.find({
-      $expr: { $lt: [{ $size: '$ocupadoPor' }, '$cuposDisponibles'] },
-      activo: true
-    });
-    res.json(turnos);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener los turnos', error: error.message });
-  }
-};   */
-
 const getTurnosDisponibles = async (req, res) => {
   try {
     const turnos = await Turno.find({
@@ -75,68 +62,17 @@ const liberarTurno = async (req, res) => {
   }
 };
 
-
-// Tomar turno (comentado por ahora)
-/*
-const tomarTurno = async (req, res) => {
-  const { turnoId, userId } = req.body;
-  const esAdminOProfesor = ['Admin', 'Profesor'].includes(req.user.role);
-
-  if (userId && !esAdminOProfesor) {
-    return res.status(403).json({ message: 'No tienes permiso para asignar turnos a otros usuarios' });
-  }
-
-  try {
-    if (!mongoose.Types.ObjectId.isValid(turnoId)) {
-      return res.status(400).json({ message: 'ID de turno inválido' });
-    }
-
-    const turno = await Turno.findById(turnoId);
-    if (!turno) return res.status(404).json({ message: 'Turno no encontrado' });
-
-    const idUsuario = esAdminOProfesor && userId ? userId : req.user.id;
-
-    if (turno.ocupadoPor.includes(idUsuario)) {
-      return res.status(400).json({ message: 'El usuario ya tiene este turno' });
-    }
-
-    if (turno.ocupadoPor.length >= turno.cuposDisponibles) {
-      return res.status(400).json({ message: 'No hay cupos disponibles' });
-    }
-
-    const credito = await Credito.findOneAndDelete({ usuario: idUsuario, usado: false });
-
-    if (!credito) {
-      return res.status(400).json({ message: 'El usuario no tiene créditos disponibles' });
-    }
-
-    turno.ocupadoPor.push(idUsuario);
-    await turno.save();
-
-    res.json({
-      message: 'Turno tomado exitosamente',
-      cuposOcupados: turno.ocupadoPor.length,
-      cuposDisponibles: turno.cuposDisponibles - turno.ocupadoPor.length
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error al tomar turno' });
-  }
-};
-*/
-
 // Obtener los turnos por usuario
 const getTurnosPorUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const usuario = await User.findById(id).populate('turnoSemanal');
+    const usuario = await User.findById(id).populate('turnoSemanales');
 
     if (!usuario) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    res.json(usuario.turnoSemanal);
+    res.json(usuario.turnoSemanales);
   } catch (error) {
     res.status(500).json({ message: 'Error obteniendo los turnos', error: error.message });
   }
@@ -155,35 +91,7 @@ const getTurnoById = async (req, res) => {
   }
 };
 
-// Crear turno
-const crearTurno = async (req, res) => {
-  try {
-    const { sede, nivel, dia, hora, cuposDisponibles } = req.body;
 
-    if (!sede || !nivel || !dia || !hora) {
-      return res.status(400).json({ message: 'Todos los campos son obligatorios' });
-    }
-
-    const CUPOS_POR_SEDE = {
-      Palermo: 10,
-      Fulgor: 12
-    };
-
-    const nuevoTurno = new Turno({
-      sede,
-      nivel,
-      dia,
-      hora,
-      cuposDisponibles: cuposDisponibles !== undefined ? cuposDisponibles : (CUPOS_POR_SEDE[sede] || 0)
-    });
-
-    await nuevoTurno.save();
-    res.status(201).json({ message: 'Turno creado exitosamente', turno: nuevoTurno });
-
-  } catch (error) {
-    res.status(500).json({ message: 'Error al crear el turno', error: error.message });
-  }
-};
 
 
 // Obtener todos los turnos
@@ -307,10 +215,8 @@ module.exports = {
   liberarTurno,
   getTurnosPorUsuario,
   getTurnoById,
-  crearTurno,
   getTodosLosTurnos,
   eliminarTurno,
   asignarTurnoManual,
-  getTurnosSemanalesDisponibles,
-  // tomarTurno // Solo si lo necesitas descomentar
+  getTurnosSemanalesDisponibles
 };
