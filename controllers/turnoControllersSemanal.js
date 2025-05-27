@@ -175,39 +175,27 @@ const asignarTurnoManual = async (req, res) => {
   }
 };
 
+// Obtener turnos según el rol del usuario
 const getTurnosSemanalesDisponibles = async (req, res) => {
   try {
-    const rol = req.user.rol; // Supone que el middleware de auth carga el usuario en req.user
-    let nivelesPermitidos = [];
+    const rolUsuario = req.user.rol; // Suponiendo que el middleware `protect` agrega el rol acá
 
-    switch (rol) {
-      case 'blanco':
-        nivelesPermitidos = ['Blanco'];
-        break;
-      case 'azul':
-        nivelesPermitidos = ['Blanco', 'Azul'];
-        break;
-      case 'violeta':
-        nivelesPermitidos = ['Azul', 'Violeta'];
-        break;
-      default:
-        // Admin y Profesor ven todo
-        const turnos = await Turno.find({ tipo: 'semanal' });
-        return res.json(turnos);
+    if (!rolUsuario) {
+      return res.status(400).json({ message: 'No se encontró el rol del usuario' });
     }
 
+    // Solo turnos disponibles del rol del usuario
     const turnos = await Turno.find({
-      tipo: 'semanal',
-      nivel: { $in: nivelesPermitidos },
-      cuposDisponibles: { $gt: 0 },
+      disponible: true,
+      rol: rolUsuario, // Solo turnos del mismo rol que el usuario
     });
 
     res.json(turnos);
   } catch (error) {
-    console.error("Error obteniendo turnos disponibles:", error);
-    res.status(500).json({ error: 'Error al obtener turnos disponibles' });
+    res.status(500).json({ message: 'Error al obtener los turnos disponibles', error: error.message });
   }
 };
+
 
 
 module.exports = {

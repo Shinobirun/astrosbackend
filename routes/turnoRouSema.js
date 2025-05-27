@@ -17,7 +17,7 @@ const router = express.Router();
 // ✅ Rutas accesibles para cualquier usuario logueado
 router.get('/sema', protect, getTurnosDisponibles);       // Ver turnos disponibles
 router.get('/turno/:id', protect, getTurnoById);      // Ver un turno específico
-router.get('/semanales/disponibles', protect, getTurnosSemanalesDisponibles);
+router.get('/disponibles', protect, getTurnosSemanalesDisponibles);
 
 // 🔒 Rutas solo para Admins o Profesores
 router.get('/todoSema', protect, adminOrProfesor, getTodosLosTurnos);  // Ver todos los turnos
