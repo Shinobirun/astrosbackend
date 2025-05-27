@@ -178,7 +178,7 @@ const asignarTurnoManual = async (req, res) => {
 // Obtener turnos según el rol del usuario
 const getTurnosSemanalesDisponibles = async (req, res) => {
   try {
-    const rolUsuario = req.user.rol; // Suponiendo que el middleware `protect` agrega el rol acá
+    const rolUsuario = req.user.role; // CORREGIDO
 
     if (!rolUsuario) {
       return res.status(400).json({ message: 'No se encontró el rol del usuario' });
