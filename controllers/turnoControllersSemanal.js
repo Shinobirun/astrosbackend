@@ -228,6 +228,8 @@ const tomarTurno = async (req, res) => {
       return res.status(400).json({ message: 'ID de turno inválido' });
     }
 
+    //Turno por user
+
     const turno = await Turno.findById(turnoId);
     if (!turno) return res.status(404).json({ message: 'Turno no encontrado' });
 
@@ -279,6 +281,23 @@ const tomarTurno = async (req, res) => {
   }
 };
 
+    const getMisTurnos = async (req, res) => {
+      try {
+        const user = await User.findById(req.user._id)
+          .populate('turnosSemanales')  // o turnosMensuales según lo que uses
+          .lean();
+
+        if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+        res.status(200).json({
+          turnosSemanales: user.turnosSemanales,  // o turnosMensuales
+        });
+      } catch (error) {
+        console.error('Error al obtener turnos del usuario:', error);
+        res.status(500).json({ message: 'Error del servidor', error: error.message });
+      }
+    };
+
 
 
 module.exports = {
@@ -290,5 +309,6 @@ module.exports = {
   eliminarTurno,
   asignarTurnoManual,
   getTurnosSemanalesDisponibles,
-  tomarTurno
+  tomarTurno,
+  getMisTurnos
 };

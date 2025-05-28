@@ -12,30 +12,36 @@ const {
   getTurnosPorUsuario,
 } = require('../controllers/turnoControllersSemanal');
 
+// Si no usás nada de 'turnoSemaController' sacalo o aclaralo
+// const { getTurnosSemanalesDisponibles, tomarTurno } = require('../controllers/turnoSemaController');
+
 const { protect, adminOrProfesor } = require('../middleware/autMiddleware');
 
 const router = express.Router();
 
 // Alias para liberar su propio turno (no de otro)
 const liberarTurnoUsuario = (req, res) => {
-  req.body.userId = undefined; // fuerza a usar el id del usuario autenticado
+  // Fuerza a usar el id del usuario autenticado (seguramente está en req.user.id)
+  req.body.userId = req.user.id; // si no está req.user.id, corregir acá
   return liberarTurno(req, res);
 };
 
-// ✅ Rutas accesibles para cualquier usuario logueado
-router.get('/sema', protect, getTurnosDisponibles);                   // Ver todos los turnos disponibles
-router.get('/turno/:id', protect, getTurnoById);                      // Ver un turno específico
-router.get('/disponibles', protect, getTurnosSemanalesDisponibles);   // Ver solo los turnos semanales disponibles
-router.get('/usuario/:id', protect, getTurnosPorUsuario);             // Ver los turnos asignados al usuario
-router.post('/tomar/:id', protect, tomarTurno);                       // Tomar un turno
-router.put('/liberarMiTurno/:id', protect, liberarTurno);             // Liberar su propio turno
-router.get('/misTurnos', protect, getMisTurnos);                     // Solo logueados
+// Rutas accesibles para cualquier usuario logueado
+router.get('/sema', protect, getTurnosDisponibles);
+router.get('/turno/:id', protect, getTurnoById);
+router.get('/disponibles', protect, getTurnosSemanalesDisponibles);
+router.get('/usuario/:id', protect, getTurnosPorUsuario);
+router.post('/tomar/:id', protect, tomarTurno);
 
+// Usar la función alias que forza el userId
+router.put('/liberarMiTurno/:id', protect, liberarTurnoUsuario);
 
-// 🔒 Rutas solo para Admins o Profesores
-router.get('/todoSema', protect, adminOrProfesor, getTodosLosTurnos);       // Ver todos los turnos (sin filtros)
-router.put('/liberarSema', protect, adminOrProfesor, liberarTurno);         // Liberar turno de cualquier usuario
-router.post('/asignarSema', protect, adminOrProfesor, asignarTurnoManual);  // Asignar turno manualmente
-router.delete('/Sema/:id', protect, adminOrProfesor, eliminarTurno);        // Eliminar un turno
+router.get('/misTurnos', protect, getMisTurnos);
+
+// Rutas solo para Admins o Profesores
+router.get('/todoSema', protect, adminOrProfesor, getTodosLosTurnos);
+router.put('/liberarSema', protect, adminOrProfesor, liberarTurno);
+router.post('/asignarSema', protect, adminOrProfesor, asignarTurnoManual);
+router.delete('/Sema/:id', protect, adminOrProfesor, eliminarTurno);
 
 module.exports = router;
