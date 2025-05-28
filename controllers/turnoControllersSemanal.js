@@ -281,22 +281,24 @@ const tomarTurno = async (req, res) => {
   }
 };
 
-    const getMisTurnos = async (req, res) => {
-      try {
-        const user = await User.findById(req.user._id)
-          .populate('turnosSemanales')  // o turnosMensuales según lo que uses
-          .lean();
+   const getMisTurnos = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+      .populate('turnosSemanales')
+      .populate('turnosMensuales')
+      .lean();
 
-        if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 
-        res.status(200).json({
-          turnosSemanales: user.turnosSemanales,  // o turnosMensuales
-        });
-      } catch (error) {
-        console.error('Error al obtener turnos del usuario:', error);
-        res.status(500).json({ message: 'Error del servidor', error: error.message });
-      }
-    };
+    res.status(200).json({
+      turnosSemanales: user.turnosSemanales || [],
+      turnosMensuales: user.turnosMensuales || [],
+    });
+  } catch (error) {
+    console.error('Error al obtener turnos del usuario:', error);
+    res.status(500).json({ message: 'Error del servidor', error: error.message });
+  }
+};
 
 
 
