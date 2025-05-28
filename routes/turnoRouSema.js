@@ -6,7 +6,7 @@ const {
   getTodosLosTurnos,
   eliminarTurno,
   asignarTurnoManual,
-  
+  tomarTurno,
   getTurnosSemanalesDisponibles,
 } = require('../controllers/turnoControllersSemanal');
 
@@ -18,6 +18,8 @@ const router = express.Router();
 router.get('/sema', protect, getTurnosDisponibles);       // Ver turnos disponibles
 router.get('/turno/:id', protect, getTurnoById);      // Ver un turno específico
 router.get('/disponibles', protect, getTurnosSemanalesDisponibles);
+router.post('/tomar/:id', protect, tomarTurno);
+
 
 // 🔒 Rutas solo para Admins o Profesores
 router.get('/todoSema', protect, adminOrProfesor, getTodosLosTurnos);  // Ver todos los turnos

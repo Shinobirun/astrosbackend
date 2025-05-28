@@ -218,6 +218,50 @@ const getTurnosSemanalesDisponibles = async (req, res) => {
   }
 };
 
+const tomarTurno = async (req, res) => {
+  const userId = req.user._id;
+  const turnoId = req.params.id;
+
+  try {
+    if (!mongoose.Types.ObjectId.isValid(turnoId)) {
+      return res.status(400).json({ message: 'ID de turno inválido' });
+    }
+
+    const turno = await Turno.findById(turnoId);
+    if (!turno) return res.status(404).json({ message: 'Turno no encontrado' });
+
+    if (!Array.isArray(turno.ocupadoPor)) turno.ocupadoPor = [];
+
+    if (turno.ocupadoPor.includes(userId.toString())) {
+      return res.status(400).json({ message: 'Ya tenés este turno asignado' });
+    }
+
+    if (turno.ocupadoPor.length >= turno.cuposDisponibles) {
+      return res.status(400).json({ message: 'No hay cupos disponibles' });
+    }
+
+    turno.ocupadoPor.push(userId);
+    await turno.save();
+
+    const usuario = await User.findById(userId);
+    if (!usuario) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    if (!Array.isArray(usuario.turnosSemanales)) usuario.turnosSemanales = [];
+
+    const turnoIdStr = turnoId.toString();
+    if (!usuario.turnosSemanales.some(id => id.toString() === turnoIdStr)) {
+      usuario.turnosSemanales.push(turnoId);
+      await usuario.save();
+    }
+
+    res.status(200).json({ message: 'Turno tomado correctamente' });
+  } catch (error) {
+    console.error('Error al tomar turno:', error);
+    res.status(500).json({ message: 'Error al tomar turno', error: error.message });
+  }
+};
+
+
 
 
 module.exports = {
@@ -228,5 +272,6 @@ module.exports = {
   getTodosLosTurnos,
   eliminarTurno,
   asignarTurnoManual,
-  getTurnosSemanalesDisponibles
+  getTurnosSemanalesDisponibles,
+  tomarTurno
 };
