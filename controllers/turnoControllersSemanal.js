@@ -199,18 +199,24 @@ const getTurnosSemanalesDisponibles = async (req, res) => {
         return res.status(400).json({ message: 'Rol no válido' });
     }
 
+    // Buscar turnos activos con cupos disponibles, filtrando por nivel
     const turnos = await Turno.find({
       nivel: { $in: nivelesPermitidos },
       activo: true,
       $expr: { $lt: [{ $size: "$ocupadoPor" }, "$cuposDisponibles"] }
-    });
+    }).lean(); // .lean() devuelve objetos planos en lugar de documentos de Mongoose
 
-    res.json(turnos);
+    // Agregar campo "cuposRestantes" a cada turno
+    const turnosConCupos = turnos.map(t => ({
+      ...t,
+      cuposRestantes: t.cuposDisponibles - t.ocupadoPor.length
+    }));
+
+    res.json(turnosConCupos);
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener los turnos disponibles', error: error.message });
   }
 };
-
 
 
 
