@@ -175,21 +175,34 @@ const asignarTurnoManual = async (req, res) => {
   }
 };
 
-// Obtener turnos según el rol del usuario
-
 const getTurnosSemanalesDisponibles = async (req, res) => {
   try {
-    const rolUsuario = req.user.role; // Esto sigue bien, el rol del usuario
+    const rolUsuario = req.user.role;
 
     if (!rolUsuario) {
       return res.status(400).json({ message: 'No se encontró el rol del usuario' });
     }
 
-    // Filtrar por nivel (que equivale al rol del usuario) y por cupos disponibles
+    // Determinar los niveles permitidos según el rol del usuario
+    let nivelesPermitidos = [];
+    switch (rolUsuario) {
+      case 'Blanco':
+        nivelesPermitidos = ['Blanco'];
+        break;
+      case 'Azul':
+        nivelesPermitidos = ['Blanco', 'Azul'];
+        break;
+      case 'Violeta':
+        nivelesPermitidos = ['Azul', 'Violeta'];
+        break;
+      default:
+        return res.status(400).json({ message: 'Rol no válido' });
+    }
+
     const turnos = await Turno.find({
-      nivel: rolUsuario, // <- el campo correcto en el modelo
+      nivel: { $in: nivelesPermitidos },
       activo: true,
-      $expr: { $lt: [{ $size: "$ocupadoPor" }, "$cuposDisponibles"] } // hay lugar disponible
+      $expr: { $lt: [{ $size: "$ocupadoPor" }, "$cuposDisponibles"] }
     });
 
     res.json(turnos);
