@@ -1,3 +1,4 @@
+const TurnoSemanal = require('../models/TurnoSemanal');
 const Turno = require('../models/TurnoSemanal');
 const User = require('../models/User');
 const Credito = require('../models/creditos');
@@ -30,7 +31,7 @@ const liberarTurno = async (req, res) => {
       return res.status(400).json({ message: 'ID de turno inválido' });
     }
 
-    const turno = await Turno.findById(turnoId);
+    const turno = await TurnoSemanal.findById(turnoId);
     if (!turno) return res.status(404).json({ message: 'Turno no encontrado' });
 
     const idUsuario = esAdminOProfesor && userId ? userId : req.user.id;
