@@ -17,12 +17,13 @@ const router = express.Router();
 // ✅ Rutas accesibles para cualquier usuario logueado
 router.get('/', protect, getTurnosDisponibles);       // Ver turnos disponibles
 router.get('/turno/:id', protect, getTurnoById);      // Ver un turno específico
+router.get('/mis-turnos', protect, getMisTurnos);     // Solo logueados
 
 // 🔒 Rutas solo para Admins o Profesores
-router.get('/todos', protect, adminOrProfesor, getTodosLosTurnos);  // Ver todos los turnos
-router.post('/', protect, adminOrProfesor, crearTurno);             // Crear nuevo turno
-router.put('/liberar', protect, adminOrProfesor, liberarTurno);     // Liberar un turno
+router.get('/todos', protect, adminOrProfesor, getTodosLosTurnos);            // Ver todos los turnos
+router.post('/', protect, adminOrProfesor, crearTurno);                       // Crear nuevo turno
+router.put('/liberar', protect, adminOrProfesor, liberarTurno);               // Liberar un turno
 router.post('/asignar', protect, adminOrProfesor, asignarTurnoManual);        // Tomar un turno
-router.delete('/:id', protect, adminOrProfesor, eliminarTurno);     // Eliminar un turno
+router.delete('/:id', protect, adminOrProfesor, eliminarTurno);               // Eliminar un turno
 
 module.exports = router;
