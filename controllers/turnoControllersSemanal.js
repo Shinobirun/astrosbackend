@@ -240,19 +240,36 @@ const tomarTurno = async (req, res) => {
       return res.status(400).json({ message: 'No hay cupos disponibles' });
     }
 
-    turno.ocupadoPor.push(userId);
-    await turno.save();
-
     const usuario = await User.findById(userId);
     if (!usuario) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    // Buscar el crédito más viejo NO usado y NO vencido
+    const creditoDisponible = await Credito.findOne({
+      usuario: userId,
+      usado: false,
+      venceEn: { $gte: new Date() }
+    }).sort({ creadoEn: 1 });
+
+    if (!creditoDisponible) {
+      return res.status(400).json({ message: 'No tenés créditos disponibles' });
+    }
+
+    // Marcar el crédito como usado
+    creditoDisponible.usado = true;
+    await creditoDisponible.save();
+
+    // Asignar el turno
+    turno.ocupadoPor.push(userId);
+    await turno.save();
 
     if (!Array.isArray(usuario.turnosSemanales)) usuario.turnosSemanales = [];
 
     const turnoIdStr = turnoId.toString();
     if (!usuario.turnosSemanales.some(id => id.toString() === turnoIdStr)) {
       usuario.turnosSemanales.push(turnoId);
-      await usuario.save();
     }
+
+    await usuario.save();
 
     res.status(200).json({ message: 'Turno tomado correctamente' });
   } catch (error) {
@@ -260,7 +277,6 @@ const tomarTurno = async (req, res) => {
     res.status(500).json({ message: 'Error al tomar turno', error: error.message });
   }
 };
-
 
 
 
