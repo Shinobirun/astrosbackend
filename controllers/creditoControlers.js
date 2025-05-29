@@ -78,6 +78,26 @@ const deleteCreditoById = async (req, res) => {
   }
 };
 
+const deleteOldestCredito = async (req, res) => {
+  try {
+    const userId = req.user.id; // Asumo que el middleware protect pone el usuario acá
+
+    // Buscamos el crédito más viejo según creadoEn
+    const oldestCredito = await Credito.findOne({ userId }).sort({ creadoEn: 1 }); // Ascendente = más viejo primero
+
+    if (!oldestCredito) {
+      return res.status(404).json({ message: 'No hay créditos para eliminar' });
+    }
+
+    await Credito.findByIdAndDelete(oldestCredito._id);
+
+    res.json({ message: 'Crédito más viejo eliminado' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al eliminar el crédito más viejo', error });
+  }
+};
+
+
 // Eliminar créditos vencidos automáticamente
 const deleteExpiredCreditos = async (req, res) => {
   try {
@@ -100,4 +120,5 @@ module.exports = {
   createCredito,
   deleteCreditoById,
   deleteExpiredCreditos,
+  deleteOldestCredito
 };

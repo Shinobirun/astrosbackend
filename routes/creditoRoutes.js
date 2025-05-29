@@ -1,20 +1,24 @@
 const express = require('express');
-const creditoController = require('../controllers/creditoControlers.js');
+const { protect } = require('../middleware/authMiddleware');  // corregí el nombre del archivo
+const creditoController = require('../controllers/creditoController.js'); // corregí nombre también
 const router = express.Router();
 
-// Obtener crédito por ID
-router.get('/:id', creditoController.getCreditoById);
+// Crear un nuevo crédito
+router.post('/', protect, creditoController.createCredito);
 
 // Obtener créditos de un usuario
-router.get('/usuario/:userId', creditoController.getCreditosByUser);
-
-// Crear un nuevo crédito
-router.post('/', creditoController.createCredito);
-
-// Eliminar crédito por ID
-router.delete('/:id', creditoController.deleteCreditoById);
+router.get('/usuario/:userId', protect, creditoController.getCreditosByUser);
 
 // Eliminar créditos vencidos (esto se ejecuta automáticamente cada día)
-router.delete('/vencidos', creditoController.deleteExpiredCreditos);
+router.delete('/vencidos', protect, creditoController.deleteExpiredCreditos);
+
+// Obtener crédito por ID
+router.get('/:id', protect, creditoController.getCreditoById);
+
+// Eliminar crédito por ID
+router.delete('/:id', protect, creditoController.deleteCreditoById);
+
+// ** NUEVA RUTA: eliminar crédito más viejo del usuario logueado **
+router.delete('/oldest', protect, creditoController.deleteOldestCredito);
 
 module.exports = router;
