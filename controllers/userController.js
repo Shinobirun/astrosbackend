@@ -5,7 +5,7 @@ const Credito = require('../models/creditos');
 const TurnoSemanal = require('../models/TurnoSemanal');
 const TurnoMensual = require('../models/TurnoMensual');
 
-// Generar JWT
+// Función para generar JWT
 const generateToken = (id) => {
   if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET no está definido en las variables de entorno');
@@ -13,7 +13,7 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
-// Registrar o reactivar usuario
+// Registrar o reactivar un usuario
 const registerUser = async (req, res) => {
   const { username, email, password, firstName, lastName, role } = req.body;
 
@@ -23,21 +23,17 @@ const registerUser = async (req, res) => {
     if (user) {
       if (!user.activo) {
         user.activo = true;
-        if (password) {
-          user.password = await bcrypt.hash(password, 10);
-        }
+        user.password = password ? await bcrypt.hash(password, 10) : user.password;
         await user.save();
         return res.json({ message: 'Tu cuenta ha sido reactivada. Por favor, inicia sesión.' });
       }
       return res.status(400).json({ message: 'El usuario ya está registrado y activo.' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     user = await User.create({
       username,
       email,
-      password: hashedPassword,
+      password,
       firstName,
       lastName,
       role,
@@ -46,7 +42,7 @@ const registerUser = async (req, res) => {
 
     // Crear 5 créditos con vencimiento a 15 días
     const creditos = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 0; i++) {
       const nuevoCredito = await Credito.create({
         usuario: user._id,
         venceEn: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
@@ -65,7 +61,7 @@ const registerUser = async (req, res) => {
   }
 };
 
-// Login usuario
+// Login de usuario
 const loginUser = async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -76,7 +72,7 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ message: 'Usuario no encontrado' });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await user.matchPassword(password);
 
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Credenciales inválidas' });
@@ -87,11 +83,11 @@ const loginUser = async (req, res) => {
     }
 
     res.json({
-      _id: user._id,
+      _id: user.id,
       username: user.username,
       email: user.email,
       role: user.role,
-      token: generateToken(user._id),
+      token: generateToken(user.id),
     });
   } catch (error) {
     console.error('Error al iniciar sesión:', error);
@@ -99,7 +95,7 @@ const loginUser = async (req, res) => {
   }
 };
 
-// Obtener usuario por ID
+// Obtener un usuario por ID
 const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
@@ -113,10 +109,18 @@ const getUserById = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    // No estás usando turnos para la respuesta, si los quieres puedes agregarlos acá
+    const turnosSemanales = await TurnoSemanal.find({
+      ocupadoPor: user._id,
+      activo: true,
+    });
+
+    const turnosMensuales = await TurnoMensual.find({
+      ocupadoPor: user._id,
+      activo: true,
+    });
 
     res.json({
-      _id: user._id,
+       _id: user.id,
       username: user.username,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -124,6 +128,7 @@ const getUserById = async (req, res) => {
       email: user.email,
       creditos: user.creditos,
       cantidadCreditos: user.creditos.length,
+      
     });
   } catch (error) {
     console.error('Error al obtener usuario por ID:', error);
@@ -131,7 +136,9 @@ const getUserById = async (req, res) => {
   }
 };
 
-// Obtener perfil usuario logueado
+
+
+// Obtener perfil del usuario
 const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
@@ -156,20 +163,20 @@ const getUserProfile = async (req, res) => {
     });
 
     res.json({
-      _id: user._id,
+      _id: user.id,
       username: user.username,
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
       email: user.email,
       creditos: user.creditos,
-      cantidadCreditos: user.creditos.length,
+      cantidadCreditos: user.creditos.length, // ✅ ACÁ VA
       turnosSemanales,
       turnosMensuales,
       activo: user.activo,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
-      token: generateToken(user._id),
+      token: generateToken(user.id),
     });
   } catch (error) {
     console.error('Error al obtener perfil de usuario:', error);
@@ -177,7 +184,7 @@ const getUserProfile = async (req, res) => {
   }
 };
 
-// Actualizar perfil usuario
+// Actualizar perfil del usuario
 const updateUserProfile = async (req, res) => {
   const {
     id: targetUserId,
@@ -194,24 +201,22 @@ const updateUserProfile = async (req, res) => {
   try {
     let userIdToUpdate = req.user.id;
     if (
-      (req.user.role === 'Admin' || req.user.role === 'Profesor') &&
+      (req.user.role === "Admin" || req.user.role === "Profesor") &&
       targetUserId
     ) {
       userIdToUpdate = targetUserId;
     }
 
     const user = await User.findById(userIdToUpdate);
-    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
 
     if (username) user.username = username;
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
-    if (role && (req.user.role === 'Admin' || req.user.role === 'Profesor')) {
+    if (role && (req.user.role === "Admin" || req.user.role === "Profesor")) {
       user.role = role;
     }
-    if (password) {
-      user.password = await bcrypt.hash(password, 10);
-    }
+    if (password) user.password = password;
     if (creditos) user.creditos = creditos;
     if (turnosSemanales) user.turnosSemanales = turnosSemanales;
     if (turnosMensuales) user.turnosMensuales = turnosMensuales;
@@ -219,7 +224,7 @@ const updateUserProfile = async (req, res) => {
     await user.save();
 
     res.json({
-      _id: user._id,
+      _id: user.id,
       username: user.username,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -229,12 +234,12 @@ const updateUserProfile = async (req, res) => {
       turnosMensuales: user.turnosMensuales,
     });
   } catch (error) {
-    console.error('Error al actualizar perfil de usuario:', error);
-    res.status(500).json({ message: 'Error al actualizar perfil de usuario' });
+    console.error("Error al actualizar perfil de usuario:", error);
+    res.status(500).json({ message: "Error al actualizar perfil de usuario" });
   }
 };
 
-// Activar / desactivar usuario
+// Activar/desactivar usuario
 const desactivarUsuario = async (req, res) => {
   const { userId } = req.body;
 
@@ -309,11 +314,11 @@ const getTurnosMensualesPorUsuario = async (req, res) => {
 module.exports = {
   registerUser,
   loginUser,
-  getUserById,
   getUserProfile,
   updateUserProfile,
   desactivarUsuario,
   getAllUsers,
   getTurnosSemanalesPorUsuario,
   getTurnosMensualesPorUsuario,
+  getUserById,
 };
