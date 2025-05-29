@@ -120,14 +120,12 @@ const getUserById = async (req, res) => {
     });
 
     res.json({
-       _id: user.id,
+      _id: user.id,
       username: user.username,
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
       email: user.email,
-      creditos: user.creditos,
-      cantidadCreditos: user.creditos.length,
       
     });
   } catch (error) {
