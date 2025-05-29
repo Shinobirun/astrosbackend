@@ -77,6 +77,7 @@ const loginUser = async (req, res) => {
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
+
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
@@ -101,15 +102,18 @@ const loginUser = async (req, res) => {
 // Obtener usuario por ID
 const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).populate({
-      path: 'creditos',
-      match: { usado: false, venceEn: { $gt: new Date() } },
-      select: '_id createdAt venceEn',
-    });
+    const user = await User.findById(req.params.id)
+      .populate({
+        path: 'creditos',
+        match: { usado: false, venceEn: { $gt: new Date() } },
+        select: '_id createdAt venceEn',
+      });
 
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
+
+    // No estás usando turnos para la respuesta, si los quieres puedes agregarlos acá
 
     res.json({
       _id: user._id,
@@ -130,11 +134,12 @@ const getUserById = async (req, res) => {
 // Obtener perfil usuario logueado
 const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).populate({
-      path: 'creditos',
-      match: { usado: false, venceEn: { $gt: new Date() } },
-      select: '_id createdAt venceEn',
-    });
+    const user = await User.findById(req.user.id)
+      .populate({
+        path: 'creditos',
+        match: { usado: false, venceEn: { $gt: new Date() } },
+        select: '_id createdAt venceEn',
+      });
 
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
@@ -188,7 +193,10 @@ const updateUserProfile = async (req, res) => {
 
   try {
     let userIdToUpdate = req.user.id;
-    if ((req.user.role === 'Admin' || req.user.role === 'Profesor') && targetUserId) {
+    if (
+      (req.user.role === 'Admin' || req.user.role === 'Profesor') &&
+      targetUserId
+    ) {
       userIdToUpdate = targetUserId;
     }
 
@@ -201,7 +209,9 @@ const updateUserProfile = async (req, res) => {
     if (role && (req.user.role === 'Admin' || req.user.role === 'Profesor')) {
       user.role = role;
     }
-    if (password) user.password = await bcrypt.hash(password, 10);
+    if (password) {
+      user.password = await bcrypt.hash(password, 10);
+    }
     if (creditos) user.creditos = creditos;
     if (turnosSemanales) user.turnosSemanales = turnosSemanales;
     if (turnosMensuales) user.turnosMensuales = turnosMensuales;
@@ -250,14 +260,49 @@ const getAllUsers = async (req, res) => {
       .populate('turnosMensuales')
       .populate({
         path: 'creditos',
-        match: { usado: false, venceEn: { $gt: new Date() } },
-        select: '_id venceEn',
+        select: '_id createdAt venceEn usado',
       });
 
     res.json(users);
   } catch (error) {
-    console.error('Error al obtener todos los usuarios:', error);
+    console.error('Error al obtener usuarios:', error);
     res.status(500).json({ message: 'Error al obtener los usuarios' });
+  }
+};
+
+// Obtener turnos semanales por usuario
+const getTurnosSemanalesPorUsuario = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await User.findById(userId).populate({
+      path: 'turnosSemanales',
+      match: { activo: true },
+    });
+
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    res.json(user.turnosSemanales);
+  } catch (error) {
+    console.error('Error al obtener turnos semanales:', error);
+    res.status(500).json({ message: 'Error al obtener turnos semanales' });
+  }
+};
+
+// Obtener turnos mensuales por usuario
+const getTurnosMensualesPorUsuario = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await User.findById(userId).populate({
+      path: 'turnosMensuales',
+      match: { activo: true },
+    });
+
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    res.json(user.turnosMensuales);
+  } catch (error) {
+    console.error('Error al obtener turnos mensuales:', error);
+    res.status(500).json({ message: 'Error al obtener turnos mensuales' });
   }
 };
 
@@ -269,4 +314,6 @@ module.exports = {
   updateUserProfile,
   desactivarUsuario,
   getAllUsers,
+  getTurnosSemanalesPorUsuario,
+  getTurnosMensualesPorUsuario,
 };
