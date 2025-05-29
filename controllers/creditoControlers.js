@@ -1,5 +1,6 @@
 const Credito = require('../models/creditos');
 const dayjs = require('dayjs');
+const User = require('../models/User');
 
 // Obtener crédito por ID
 const getCreditoById = async (req, res) => {
@@ -29,21 +30,39 @@ const getCreditosByUser = async (req, res) => {
   }
 };
 
-// Crear un nuevo crédito
 const createCredito = async (req, res) => {
   try {
     const { usuario, venceEn } = req.body;
-    
+
+    // 1️⃣ Validar que se pase el usuario
+    if (!usuario) {
+      return res.status(400).json({ message: 'El campo "usuario" es obligatorio.' });
+    }
+
+    // 2️⃣ Crear el crédito
     const nuevoCredito = new Credito({
       usuario,
-      venceEn: venceEn ? new Date(venceEn) : undefined, // Si no se pasa, usa el default del esquema
+      // Si viene venceEn, lo convertimos; si no, el default del esquema se encargará
+      ...(venceEn && { venceEn: new Date(venceEn) }),
     });
-
     await nuevoCredito.save();
 
-    res.status(201).json({ message: 'Crédito creado', credito: nuevoCredito });
+    // 3️⃣ Asociar el crédito al usuario
+    const user = await User.findById(usuario);
+    if (user) {
+      user.creditos = user.creditos || [];
+      user.creditos.push(nuevoCredito._id);
+      await user.save();
+    }
+
+    // 4️⃣ Devolver respuesta
+    res.status(201).json({
+      message: 'Crédito creado correctamente.',
+      credito: nuevoCredito,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error al crear el crédito', error });
+    console.error('Error al crear el crédito:', error);
+    res.status(500).json({ message: 'Error al crear el crédito', error: error.message });
   }
 };
 
