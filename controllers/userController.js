@@ -18,31 +18,46 @@ const registerUser = async (req, res) => {
   const { username, email, password, firstName, lastName, role } = req.body;
 
   try {
-    let user = await User.findOne({ email });
+    // 1️⃣ Buscamos si ya existe un usuario con este username
+    let user = await User.findOne({ username });
 
     if (user) {
+      // Si existe pero está inactivo, lo reactivamos
       if (!user.activo) {
         user.activo = true;
-        user.password = password ? await bcrypt.hash(password, 10) : user.password;
+        if (password) {
+          user.password = await bcrypt.hash(password, 10);
+        }
         await user.save();
         return res.json({ message: 'Tu cuenta ha sido reactivada. Por favor, inicia sesión.' });
       }
-      return res.status(400).json({ message: 'El usuario ya está registrado y activo.' });
+      // Si está activo, ya no podemos registrar este username
+      return res.status(400).json({ message: 'El nombre de usuario ya está en uso.' });
     }
 
+    // 2️⃣ Si proporcionaron email, verificamos que tampoco esté en uso
+    if (email) {
+      const emailTaken = await User.findOne({ email });
+      if (emailTaken) {
+        return res.status(400).json({ message: 'El email ya está en uso.' });
+      }
+    }
+
+    // 3️⃣ Creamos el usuario
+    const hashedPassword = await bcrypt.hash(password, 10);
     user = await User.create({
       username,
-      email,
-      password,
+      email: email || undefined,
+      password: hashedPassword,
       firstName,
       lastName,
       role,
       activo: true,
     });
 
-    // Crear 5 créditos con vencimiento a 15 días
+    // 4️⃣ Generamos 5 créditos con vencimiento a 15 días
     const creditos = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 0; i++) {
       const nuevoCredito = await Credito.create({
         usuario: user._id,
         venceEn: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
@@ -54,6 +69,7 @@ const registerUser = async (req, res) => {
     user.creditos = creditos;
     await user.save();
 
+    // 5️⃣ Respondemos éxito
     res.status(201).json({ message: 'Registro exitoso. Por favor, inicia sesión.' });
   } catch (error) {
     console.error('Error al registrar usuario:', error);
