@@ -42,7 +42,7 @@ const registerUser = async (req, res) => {
 
     // Crear 5 créditos con vencimiento a 15 días
     const creditos = [];
-    for (let i = 0; i < 0; i++) {
+    for (let i = 0; i < 5; i++) {
       const nuevoCredito = await Credito.create({
         usuario: user._id,
         venceEn: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
@@ -63,17 +63,18 @@ const registerUser = async (req, res) => {
 
 // Login de usuario
 const loginUser = async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, password } = req.body;   // solo username y password
 
   try {
-    const user = await User.findOne({ $or: [{ username }, { email }] });
+    // Buscamos únicamente por username
+    const user = await User.findOne({ username });
 
     if (!user) {
       return res.status(401).json({ message: 'Usuario no encontrado' });
     }
 
+    // Usamos el método de instancia que ya tenés en tu esquema
     const isPasswordValid = await user.matchPassword(password);
-
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
@@ -82,18 +83,19 @@ const loginUser = async (req, res) => {
       return res.status(403).json({ message: 'Usuario desactivado. Contacta al administrador.' });
     }
 
+    // Devolvemos los datos mínimos + token
     res.json({
-      _id: user.id,
+      _id: user._id,
       username: user.username,
-      email: user.email,
       role: user.role,
-      token: generateToken(user.id),
+      token: generateToken(user._id),
     });
   } catch (error) {
     console.error('Error al iniciar sesión:', error);
     res.status(500).json({ message: 'Error al iniciar sesión' });
   }
 };
+
 
 // Obtener un usuario por ID
 const getUserById = async (req, res) => {
@@ -168,7 +170,6 @@ const getUserProfile = async (req, res) => {
       role: user.role,
       email: user.email,
       creditos: user.creditos,
-      cantidadCreditos: user.creditos.length, // ✅ ACÁ VA
       turnosSemanales,
       turnosMensuales,
       activo: user.activo,
