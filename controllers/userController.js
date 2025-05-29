@@ -42,7 +42,7 @@ const registerUser = async (req, res) => {
 
     // Crear 5 créditos con vencimiento a 15 días
     const creditos = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 0; i++) {
       const nuevoCredito = await Credito.create({
         usuario: user._id,
         venceEn: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
@@ -120,12 +120,14 @@ const getUserById = async (req, res) => {
     });
 
     res.json({
-      _id: user.id,
+       _id: user.id,
       username: user.username,
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
       email: user.email,
+      creditos: user.creditos,
+      cantidadCreditos: user.creditos.length,
       
     });
   } catch (error) {
