@@ -1,6 +1,6 @@
 const express = require('express');
-const { protect } = require('../middleware/authMiddleware');  // corregí el nombre del archivo
-const creditoController = require('../controllers/creditoController.js'); // corregí nombre también
+const { protect } = require('../middleware/autMiddleware.js');  
+const creditoController = require('../controllers/creditoControlers.js');
 const router = express.Router();
 
 // Crear un nuevo crédito
