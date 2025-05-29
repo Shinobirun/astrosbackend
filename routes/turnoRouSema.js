@@ -40,7 +40,7 @@ router.get('/misTurnos', protect, getMisTurnos);
 
 // Rutas solo para Admins o Profesores
 router.get('/todoSema', protect, adminOrProfesor, getTodosLosTurnos);
-router.put('/liberarSema', protect, adminOrProfesor, liberarTurno);
+router.put('/liberarSema', protect, liberarTurno);
 router.post('/asignarSema', protect, adminOrProfesor, asignarTurnoManual);
 router.delete('/Sema/:id', protect, adminOrProfesor, eliminarTurno);
 
