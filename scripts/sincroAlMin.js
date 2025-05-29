@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 const TurnoSemanal = require('../models/TurnoSemanal');
 const TurnoMensual = require('../models/TurnoMensual');
+const Credito = require('../models/credito.model'); // ajustá el path según tu estructura
+require('dotenv').config();
+
 
 mongoose.connect('mongodb://localhost:27017/astros_fulgor_test4')
   .then(() => {
@@ -48,3 +51,33 @@ mongoose.connect('mongodb://localhost:27017/astros_fulgor_test4')
   }).catch(err => {
     console.error('Error al conectar a MongoDB:', err);
   });
+
+
+
+
+const mongoose = require('mongoose');
+const Credito = require('./ruta/a/tu/modelo/Credito'); // Ajustá la ruta
+
+const deleteExpiredCreditos = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    const hoy = new Date();
+
+    const result = await Credito.deleteMany({
+      venceEn: { $lt: hoy }, // estricto menor, vencidos antes de ahora
+    });
+
+    console.log(`Se eliminaron ${result.deletedCount} créditos vencidos.`);
+    await mongoose.disconnect();
+    process.exit(0);
+  } catch (error) {
+    console.error('Error al eliminar créditos vencidos:', error);
+    process.exit(1);
+  }
+};
+
+deleteExpiredCreditos();

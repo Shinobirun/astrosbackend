@@ -6,12 +6,12 @@ const TurnoMensual = require('./TurnoMensual')
 const userSchema = new mongoose.Schema(
   {
     username: { type: String, required: true, unique: true },
-    email: { type: String, required: false, unique: true, match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
+    email: { type: String, required: false, match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
     password: { type: String, required: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     role: { type: String, enum: ['Admin', 'Profesor', 'Violeta', 'Azul', 'Blanco'], required: true },
-    telefono: { type: String, required: true },
+    telefono: { type: String, required: false },
     
     // 🔄 Nuevos campos
     turnosSemanales: [{ type: mongoose.Schema.Types.ObjectId, ref: 'TurnoSemanal' }],
