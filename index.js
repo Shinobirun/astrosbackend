@@ -7,7 +7,7 @@ const cron = require('node-cron');
 // Modelos
 const TurnoSemanal = require('./models/TurnoSemanal');
 const TurnoMensual = require('./models/TurnoMensual');
-const Credito = require('./models/credito.model');
+const Credito = require('./models/creditos');
 
 // Scripts y conexión
 const inicializarTurnosBase = require('./scripts/iniciadorTurnosBase.js');
