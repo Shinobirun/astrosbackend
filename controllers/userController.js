@@ -168,6 +168,7 @@ const getUserProfile = async (req, res) => {
       role: user.role,
       email: user.email,
       creditos: user.creditos,
+      cantidadCreditos: user.creditos.length, // ✅ ACÁ VA
       turnosSemanales,
       turnosMensuales,
       activo: user.activo,
