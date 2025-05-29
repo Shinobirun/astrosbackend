@@ -13,29 +13,25 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
-// Registrar o reactivar un usuario
+// Registrar o reactivar un usuario (sin créditos)
 const registerUser = async (req, res) => {
   const { username, email, password, firstName, lastName, role } = req.body;
 
   try {
-    // 1️⃣ Buscamos si ya existe un usuario con este username
+    // 1️⃣ Verificar username
     let user = await User.findOne({ username });
 
     if (user) {
-      // Si existe pero está inactivo, lo reactivamos
       if (!user.activo) {
         user.activo = true;
-        if (password) {
-          user.password = await bcrypt.hash(password, 10);
-        }
+        if (password) user.password = password; // será hasheada en el modelo
         await user.save();
         return res.json({ message: 'Tu cuenta ha sido reactivada. Por favor, inicia sesión.' });
       }
-      // Si está activo, ya no podemos registrar este username
       return res.status(400).json({ message: 'El nombre de usuario ya está en uso.' });
     }
 
-    // 2️⃣ Si proporcionaron email, verificamos que tampoco esté en uso
+    // 2️⃣ Verificar email (si se proporcionó)
     if (email) {
       const emailTaken = await User.findOne({ email });
       if (emailTaken) {
@@ -43,39 +39,24 @@ const registerUser = async (req, res) => {
       }
     }
 
-    // 3️⃣ Creamos el usuario
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // 3️⃣ Crear usuario (el pre('save') del modelo hashea el password)
     user = await User.create({
       username,
       email: email || undefined,
-      password: hashedPassword,
+      password,    // crudo, será encriptado en el middleware
       firstName,
       lastName,
       role,
       activo: true,
     });
 
-    // 4️⃣ Generamos 5 créditos con vencimiento a 15 días
-    const creditos = [];
-    for (let i = 0; i < 0; i++) {
-      const nuevoCredito = await Credito.create({
-        usuario: user._id,
-        venceEn: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
-        usado: false,
-      });
-      creditos.push(nuevoCredito._id);
-    }
-
-    user.creditos = creditos;
-    await user.save();
-
-    // 5️⃣ Respondemos éxito
     res.status(201).json({ message: 'Registro exitoso. Por favor, inicia sesión.' });
   } catch (error) {
     console.error('Error al registrar usuario:', error);
     res.status(500).json({ message: 'Error al registrar el usuario' });
   }
 };
+
 
 // Login de usuario
 const loginUser = async (req, res) => {
