@@ -307,6 +307,38 @@ const getTurnosMensualesPorUsuario = async (req, res) => {
   }
 };
 
+const deleteOldestCreditoOfUser = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Buscar el crédito más antiguo, no usado y no vencido
+    const oldestCredito = await Credito.findOne({
+      usuario: userId,
+      usado: false,
+      venceEn: { $gte: new Date() }
+    }).sort({ creadoEn: 1 });
+
+    if (!oldestCredito) {
+      return res.status(404).json({ message: 'No hay créditos disponibles para eliminar' });
+    }
+
+    // Eliminar el crédito de la colección
+    await Credito.findByIdAndDelete(oldestCredito._id);
+
+    // Eliminar la referencia del array de créditos del usuario
+    await User.findByIdAndUpdate(userId, {
+      $pull: { creditos: oldestCredito._id }
+    });
+
+    res.json({ message: 'Crédito más viejo eliminado exitosamente' });
+
+  } catch (error) {
+    console.error('Error al eliminar el crédito más viejo del usuario:', error);
+    res.status(500).json({ message: 'Error interno', error });
+  }
+};
+
+
 module.exports = {
   registerUser,
   loginUser,
@@ -317,4 +349,5 @@ module.exports = {
   getTurnosSemanalesPorUsuario,
   getTurnosMensualesPorUsuario,
   getUserById,
+  deleteOldestCreditoOfUser
 };

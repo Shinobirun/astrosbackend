@@ -1,5 +1,5 @@
 const express = require('express');
-const { registerUser, loginUser, getUserProfile, updateUserProfile, desactivarUsuario, getAllUsers,getTurnosSemanalesPorUsuario,getTurnosMensualesPorUsuario, getUserById } = require('../controllers/userController');
+const { registerUser, loginUser, getUserProfile, updateUserProfile, desactivarUsuario, getAllUsers,getTurnosSemanalesPorUsuario,getTurnosMensualesPorUsuario, getUserById, deleteOldestCreditoOfUser } = require('../controllers/userController');
 const { protect, adminOrProfesor, admin, userAccess } = require('../middleware/autMiddleware');
 const { getTurnosPorUsuario } = require("../controllers/turnoControllersMensual");
 
@@ -26,6 +26,8 @@ router.get('/:id', protect, getUserById);
 // Si es un usuario normal, solo puede ver sus propios turnos
 router.get("/usuario/:id", protect, userAccess, getTurnosPorUsuario);
 router.get('/turnosSemanales/:id', protect, getTurnosSemanalesPorUsuario);
+router.delete('/creditos/oldest', protect, deleteOldestCreditoOfUser);
+
 
 // Ruta para mensuales
 router.get('/turnosMensuales/:id', protect, getTurnosMensualesPorUsuario);
