@@ -40,6 +40,7 @@ const liberarTurno = async (req, res) => {
       return res.status(400).json({ message: 'El usuario no tenía este turno asignado' });
     }
 
+    // Liberar el turno
     turno.ocupadoPor = turno.ocupadoPor.filter(uid => uid.toString() !== idUsuario.toString());
     turno.cuposDisponibles += 1;
     await turno.save();
@@ -49,12 +50,22 @@ const liberarTurno = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
+    // Quitar el turno del usuario
     user.turnosSemanales = user.turnosSemanales.filter(tid => tid.toString() !== turnoId);
     await user.save();
 
-    // 👉 Crear un nuevo crédito para el usuario
-    const nuevoCredito = new Credito({ usuario: idUsuario });
+    // Crear el crédito
+    const nuevoCredito = new Credito({
+      fecha: new Date(),
+      tipo: 'semanal',
+      usuario: idUsuario
+    });
+
     await nuevoCredito.save();
+
+    // Asociar el crédito al usuario
+    user.creditos.push(nuevoCredito._id);
+    await user.save();
 
     res.status(200).json({ message: 'Turno liberado correctamente y crédito creado' });
   } catch (error) {
@@ -62,6 +73,7 @@ const liberarTurno = async (req, res) => {
     res.status(500).json({ message: 'Error al liberar el turno' });
   }
 };
+
 
 // Obtener los turnos por usuario
 const getTurnosPorUsuario = async (req, res) => {
