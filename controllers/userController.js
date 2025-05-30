@@ -188,6 +188,8 @@ const updateUserProfile = async (req, res) => {
     firstName,
     lastName,
     role,
+    email,
+    telefono,
     password,
     creditos,
     turnosSemanales,
@@ -257,11 +259,20 @@ const desactivarUsuario = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     const users = await User.find()
-      .populate('turnosSemanales')
-      .populate('turnosMensuales')
+      .select('-password')
       .populate({
         path: 'creditos',
         select: '_id createdAt venceEn usado',
+      })
+      .populate({
+        path: 'turnosSemanales',
+        model: 'TurnoSemanal',
+        select: '-__v',
+      })
+      .populate({
+        path: 'turnosMensuales',
+        model: 'TurnoMensual',
+        select: '-__v',
       });
 
     res.json(users);

@@ -30,6 +30,8 @@ const getCreditosByUser = async (req, res) => {
   }
 };
 
+//Crea creditos
+
 const createCredito = async (req, res) => {
   try {
     const { usuario, venceEn } = req.body;
