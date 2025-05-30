@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const TurnoSemanal = require('../models/TurnoSemanal');
 const TurnoMensual = require('../models/TurnoMensual');
 const Credito = require('../models/creditos'); // ajustá el path según tu estructura
+const User = require('../models/User');
 require('dotenv').config();
 
 
@@ -66,19 +67,29 @@ const deleteExpiredCreditos = async () => {
 
     const hoy = new Date();
 
+    // Buscar créditos vencidos
     const vencidos = await Credito.find({ venceEn: { $lt: hoy } });
-    console.log(`Créditos vencidos encontrados: ${vencidos.length}`);
 
     if (vencidos.length === 0) {
+      console.log('No hay créditos vencidos.');
       await mongoose.disconnect();
       return process.exit(0);
     }
 
-    const result = await Credito.deleteMany({
-      _id: { $in: vencidos.map(c => c._id) }
-    });
+    const idsVencidos = vencidos.map(c => c._id);
+    const usuariosAfectados = vencidos.map(c => c.usuario);
 
+    // 1. Eliminar créditos de la colección Credito
+    const result = await Credito.deleteMany({ _id: { $in: idsVencidos } });
     console.log(`Se eliminaron ${result.deletedCount} créditos vencidos.`);
+
+    // 2. Eliminar las referencias en los usuarios
+    const updateResult = await User.updateMany(
+      { _id: { $in: usuariosAfectados } },
+      { $pull: { creditos: { $in: idsVencidos } } }
+    );
+    console.log(`Usuarios actualizados: ${updateResult.modifiedCount}`);
+
     await mongoose.disconnect();
     process.exit(0);
   } catch (error) {
