@@ -105,3 +105,46 @@ const deleteExpiredCreditos = async () => {
 };
 
 deleteExpiredCreditos();
+
+
+const limpiarReferenciasRotas = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    // Obtener todos los IDs válidos de la colección Credito
+    const creditosValidos = await Credito.find({}, '_id');
+    const idsValidos = creditosValidos.map(c => c._id.toString());
+
+    // Buscar todos los usuarios
+    const usuarios = await User.find({}, '_id creditos');
+
+    let totalUsuariosModificados = 0;
+
+    for (const usuario of usuarios) {
+      const creditosUsuario = usuario.creditos.map(id => id.toString());
+      const creditosLimpios = creditosUsuario.filter(id => idsValidos.includes(id));
+
+      // Si hay diferencias, actualizar
+      if (creditosUsuario.length !== creditosLimpios.length) {
+        usuario.creditos = creditosLimpios;
+        await usuario.save();
+        totalUsuariosModificados++;
+        console.log(`🧼 Referencias rotas eliminadas para usuario: ${usuario._id}`);
+      }
+    }
+
+    console.log(`✅ Limpieza completada. Usuarios modificados: ${totalUsuariosModificados}`);
+
+    await mongoose.disconnect();
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Error durante la limpieza de referencias rotas:', error);
+    await mongoose.disconnect();
+    process.exit(1);
+  }
+};
+
+limpiarReferenciasRotas();

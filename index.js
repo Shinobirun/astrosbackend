@@ -8,6 +8,7 @@ const cron = require('node-cron');
 const TurnoSemanal = require('./models/TurnoSemanal');
 const TurnoMensual = require('./models/TurnoMensual');
 const Credito = require('./models/creditos');
+const User = require('./models/User');
 
 // Scripts y conexión
 const inicializarTurnosBase = require('./scripts/iniciadorTurnosBase.js');
@@ -24,7 +25,6 @@ app.use(cors());
 connectDB().then(async () => {
   console.log('Conectado a la base de datos');
 
-  // Inicializar turnos base
   await inicializarTurnosBase();
 
   // Zona horaria
@@ -34,9 +34,7 @@ connectDB().then(async () => {
   cron.schedule('0 1 * * 0', async () => {
     try {
       console.log(`[${new Date().toLocaleString()}] ⏳ Sincronizando turnos semanales...`);
-
       await TurnoSemanal.deleteMany();
-
       const turnosMensuales = await TurnoMensual.find();
       for (const turno of turnosMensuales) {
         await new TurnoSemanal({
@@ -49,20 +47,62 @@ connectDB().then(async () => {
           activo: turno.activo,
         }).save();
       }
-
       console.log('✔️ Turnos semanales sincronizados');
     } catch (error) {
       console.error('❌ Error sincronizando turnos semanales:', error);
     }
   });
 
-  // 🔁 CRON 2: Eliminar créditos vencidos → cada hora
-  cron.schedule('* * * * *', async () => {
+  // 🔁 CRON 2: Eliminar créditos vencidos → cada minuto
+  cron.schedule('0 * * * *', async () => {
     try {
-      const resultado = await Credito.deleteMany({ venceEn: { $lte: new Date() } });
-      console.log(`[${new Date().toLocaleString()}] 🧹 Créditos vencidos eliminados: ${resultado.deletedCount}`);
+      const hoy = new Date();
+      const vencidos = await Credito.find({ venceEn: { $lt: hoy } });
+
+      if (vencidos.length > 0) {
+        const idsVencidos = vencidos.map(c => c._id);
+        const usuariosAfectados = vencidos.map(c => c.usuario);
+
+        const result = await Credito.deleteMany({ _id: { $in: idsVencidos } });
+        console.log(`🧹 Créditos vencidos eliminados: ${result.deletedCount}`);
+
+        const updateResult = await User.updateMany(
+          { _id: { $in: usuariosAfectados } },
+          { $pull: { creditos: { $in: idsVencidos } } }
+        );
+        console.log(`👤 Usuarios actualizados: ${updateResult.modifiedCount}`);
+      } else {
+        console.log('🟢 No hay créditos vencidos');
+      }
     } catch (error) {
       console.error('❌ Error eliminando créditos vencidos:', error);
+    }
+  });
+
+  // 🔁 CRON 3: Limpiar referencias rotas → cada minuto
+  cron.schedule('0 * * * *', async () => {
+    try {
+      const creditosValidos = await Credito.find({}, '_id');
+      const idsValidos = creditosValidos.map(c => c._id.toString());
+
+      const usuarios = await User.find({}, '_id creditos');
+
+      let modificados = 0;
+
+      for (const usuario of usuarios) {
+        const creditosLimpios = usuario.creditos.filter(c => idsValidos.includes(c.toString()));
+        if (creditosLimpios.length !== usuario.creditos.length) {
+          usuario.creditos = creditosLimpios;
+          await usuario.save();
+          modificados++;
+        }
+      }
+
+      if (modificados > 0) {
+        console.log(`🧼 Usuarios con referencias rotas limpiados: ${modificados}`);
+      }
+    } catch (error) {
+      console.error('❌ Error limpiando referencias rotas:', error);
     }
   });
 });
