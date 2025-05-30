@@ -56,15 +56,44 @@ connectDB().then(async () => {
     }
   });
 
-  // 🔁 CRON 2: Eliminar créditos vencidos → cada hora
-  cron.schedule('0 * * * *', async () => {
-    try {
-      const resultado = await Credito.deleteMany({ venceEn: { $lte: new Date() } });
-      console.log(`[${new Date().toLocaleString()}] 🧹 Créditos vencidos eliminados: ${resultado.deletedCount}`);
-    } catch (error) {
-      console.error('❌ Error eliminando créditos vencidos:', error);
+ cron.schedule('* * * * *', async () => {
+  try {
+    const ahora = new Date();
+
+    // Paso 1: Buscar créditos vencidos
+    const vencidos = await Credito.find({ venceEn: { $lt: ahora } });
+
+    if (vencidos.length === 0) {
+      console.log(`[${new Date().toLocaleString()}] 🧹 No hay créditos vencidos para eliminar.`);
+    } else {
+      const idsVencidos = vencidos.map(c => c._id);
+      const usuariosAfectados = vencidos.map(c => c.usuario);
+
+      // Paso 2: Eliminar créditos vencidos
+      const result = await Credito.deleteMany({ _id: { $in: idsVencidos } });
+      console.log(`[${new Date().toLocaleString()}] 🧹 Créditos vencidos eliminados: ${result.deletedCount}`);
+
+      // Paso 3: Eliminar referencias en usuarios
+      const updateResult = await User.updateMany(
+        { _id: { $in: usuariosAfectados } },
+        { $pull: { creditos: { $in: idsVencidos } } }
+      );
+      console.log(`[${new Date().toLocaleString()}] 👤 Usuarios actualizados (refs vencidas): ${updateResult.modifiedCount}`);
     }
-  });
+
+    // Paso 4: Limpiar referencias rotas en general
+    const creditosExistentes = await Credito.find({}, '_id');
+    const idsValidos = creditosExistentes.map(c => c._id);
+
+    const resultadoLimpieza = await User.updateMany(
+      {},
+      { $pull: { creditos: { $nin: idsValidos } } }
+    );
+    console.log(`[${new Date().toLocaleString()}] 🧼 Limpieza general: usuarios con referencias rotas limpiados: ${resultadoLimpieza.modifiedCount}`);
+
+  } catch (error) {
+    console.error(`[${new Date().toLocaleString()}] ❌ Error en el cron de limpieza de créditos:`, error);
+  }
 });
 
 // Rutas
