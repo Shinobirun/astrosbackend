@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const TurnoSemanal = require('../models/TurnoSemanal');
 const TurnoMensual = require('../models/TurnoMensual');
-const Credito = require('../models/credito.model'); // ajustá el path según tu estructura
+const Credito = require('../models/creditos'); // ajustá el path según tu estructura
 require('dotenv').config();
 
 
@@ -55,8 +55,7 @@ mongoose.connect('mongodb://localhost:27017/astros_fulgor_test4')
 
 
 
-const mongoose = require('mongoose');
-const Credito = require('./ruta/a/tu/modelo/Credito'); // Ajustá la ruta
+
 
 const deleteExpiredCreditos = async () => {
   try {
@@ -67,8 +66,16 @@ const deleteExpiredCreditos = async () => {
 
     const hoy = new Date();
 
+    const vencidos = await Credito.find({ venceEn: { $lt: hoy } });
+    console.log(`Créditos vencidos encontrados: ${vencidos.length}`);
+
+    if (vencidos.length === 0) {
+      await mongoose.disconnect();
+      return process.exit(0);
+    }
+
     const result = await Credito.deleteMany({
-      venceEn: { $lt: hoy }, // estricto menor, vencidos antes de ahora
+      _id: { $in: vencidos.map(c => c._id) }
     });
 
     console.log(`Se eliminaron ${result.deletedCount} créditos vencidos.`);
