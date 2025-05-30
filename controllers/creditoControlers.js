@@ -80,7 +80,7 @@ const deleteCreditoById = async (req, res) => {
 
 const deleteOldestCredito = async (req, res) => {
   try {
-    const userId = req.user.id; // Asumo que el middleware protect pone el usuario acá
+    const userId = req.user.id; 
 
     // Buscamos el crédito más viejo según creadoEn
     const oldestCredito = await Credito.findOne({ userId }).sort({ creadoEn: 1 }); // Ascendente = más viejo primero
