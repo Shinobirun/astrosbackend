@@ -162,6 +162,8 @@ const getTurnoById = async (req, res) => {
   }
 };
 
+//crear turno
+
 const crearTurno = async (req, res) => {
   try {
     const { sede, nivel, hora, cuposDisponibles, fecha, repetirDosMeses } = req.body;
@@ -170,20 +172,29 @@ const crearTurno = async (req, res) => {
       return res.status(400).json({ message: 'Faltan datos obligatorios' });
     }
 
-    // Validar valores aceptados para sede y nivel (opcional, pero recomendado)
     const sedesValidas = ['Palermo', 'Fulgor'];
     const nivelesValidos = ['Blanco', 'Azul', 'Violeta'];
 
     if (!sedesValidas.includes(sede)) {
       return res.status(400).json({ message: 'Sede inválida' });
     }
+
     if (!nivelesValidos.includes(nivel)) {
       return res.status(400).json({ message: 'Nivel inválido' });
+    }
+
+    // Validar hora en formato HH:mm
+    if (!/^\d{2}:\d{2}$/.test(hora)) {
+      return res.status(400).json({ message: 'La hora debe tener formato HH:mm' });
     }
 
     const fechaTurno = moment(fecha);
     if (!fechaTurno.isValid()) {
       return res.status(400).json({ message: 'La fecha proporcionada no es válida' });
+    }
+
+    if (fechaTurno.isBefore(moment(), 'day')) {
+      return res.status(400).json({ message: 'No se pueden crear turnos en el pasado' });
     }
 
     const CUPOS_POR_SEDE = {
@@ -192,18 +203,30 @@ const crearTurno = async (req, res) => {
     };
 
     const cupos = cuposDisponibles !== undefined ? Number(cuposDisponibles) : (CUPOS_POR_SEDE[sede] || 0);
-    if (cupos <= 0) {
-      return res.status(400).json({ message: 'Cupos disponibles debe ser mayor a 0' });
+
+    if (!Number.isInteger(cupos) || cupos <= 0) {
+      return res.status(400).json({ message: 'Cupos disponibles debe ser un número mayor a 0' });
     }
 
     const diaSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-
     let turnosCreados = [];
 
     if (repetirDosMeses) {
       for (let i = 0; i < 8; i++) {
         const nuevaFecha = fechaTurno.clone().add(i, 'weeks');
-        const diaAuto = diaSemana[nuevaFecha.day()];  // recalcula día para cada fecha
+        const diaAuto = diaSemana[nuevaFecha.day()];
+
+        const yaExiste = await Turno.findOne({
+          sede,
+          nivel,
+          hora,
+          fecha: nuevaFecha.toDate(),
+        });
+
+        if (yaExiste) {
+          // No lo creamos, pero lo dejamos registrado como duplicado si querés
+          continue;
+        }
 
         const nuevoTurno = new Turno({
           sede,
@@ -218,9 +241,30 @@ const crearTurno = async (req, res) => {
         turnosCreados.push(nuevoTurno);
       }
 
-      return res.status(201).json({ message: 'Turnos creados para 2 meses', turnos: turnosCreados });
+      turnosCreados.sort((a, b) => a.fecha - b.fecha);
+
+      if (turnosCreados.length === 0) {
+        return res.status(400).json({ message: 'Ya existen todos los turnos en las fechas indicadas' });
+      }
+
+      return res.status(201).json({
+        message: 'Turnos creados para 2 meses',
+        turnos: turnosCreados,
+      });
+
     } else {
       const diaAuto = diaSemana[fechaTurno.day()];
+
+      const yaExiste = await Turno.findOne({
+        sede,
+        nivel,
+        hora,
+        fecha: fechaTurno.toDate(),
+      });
+
+      if (yaExiste) {
+        return res.status(400).json({ message: 'Ya existe un turno en esa fecha, hora, sede y nivel' });
+      }
 
       const nuevoTurno = new Turno({
         sede,
@@ -232,7 +276,11 @@ const crearTurno = async (req, res) => {
       });
 
       await nuevoTurno.save();
-      return res.status(201).json({ message: 'Turno creado exitosamente', turno: nuevoTurno });
+
+      return res.status(201).json({
+        message: 'Turno creado exitosamente',
+        turno: nuevoTurno,
+      });
     }
 
   } catch (error) {
@@ -240,6 +288,7 @@ const crearTurno = async (req, res) => {
     res.status(500).json({ message: 'Error al crear el turno', error: error.message });
   }
 };
+
 
 // Obtener todos los turnos
 const getTodosLosTurnos = async (req, res) => {
@@ -288,6 +337,43 @@ const eliminarTurno = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ message: 'Error al eliminar el turno', error: error.message });
+  }
+};
+
+// eliminar desde fecha
+
+const eliminarDesdeFecha = async (req, res) => {
+  try {
+    if (!['Admin', 'Profesor'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'No tienes permiso para eliminar turnos' });
+    }
+
+    const { fecha } = req.params;
+    const { sede, hora, dia } = req.query;
+
+    if (!sede || !hora || !dia) {
+      return res.status(400).json({
+        message: 'Faltan parámetros: sede, hora y dia son obligatorios',
+      });
+    }
+
+    const fechaConsulta = new Date(fecha);
+
+    const resultado = await Turno.deleteMany({
+      fecha: { $gte: fechaConsulta },
+      sede,
+      hora,
+      dia,
+    });
+
+    res.json({
+      message: `Se eliminaron ${resultado.deletedCount} turnos desde la fecha ${fecha} con sede ${sede}, hora ${hora} y día ${dia}.`,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error al eliminar los turnos desde la fecha',
+      error: error.message,
+    });
   }
 };
 
@@ -352,6 +438,7 @@ module.exports = {
   crearTurno,
   getTodosLosTurnos,
   eliminarTurno,
+  eliminarDesdeFecha,
   asignarTurnoManual,
   // tomarTurno // Solo si lo necesitas descomentar
 };

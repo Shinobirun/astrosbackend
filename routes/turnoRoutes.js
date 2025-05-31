@@ -6,7 +6,8 @@ const {
   crearTurno,
   getTodosLosTurnos,
   eliminarTurno,
-  asignarTurnoManual
+  asignarTurnoManual,
+  eliminarDesdeFecha
 } = require('../controllers/turnoControllersMensual');
 
 const { protect, adminOrProfesor } = require('../middleware/autMiddleware');
@@ -24,5 +25,6 @@ router.post('/', protect, adminOrProfesor, crearTurno);                       //
 router.put('/liberar', protect, adminOrProfesor, liberarTurno);               // Liberar un turno
 router.post('/asignar', protect, adminOrProfesor, asignarTurnoManual);        // Tomar un turno
 router.delete('/:id', protect, adminOrProfesor, eliminarTurno);               // Eliminar un turno
+router.delete('/desde-fecha/:fecha', protect, eliminarDesdeFecha);
 
 module.exports = router;
