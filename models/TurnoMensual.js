@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const turnoMensualSchema = new mongoose.Schema({
+  fecha: {
+    type: Date,
+    required: true,
+  },
   sede: {
     type: String,
     required: true,
@@ -29,7 +33,7 @@ const turnoMensualSchema = new mongoose.Schema({
   cuposDisponibles: {
     type: Number,
     required: true,
-    min: [1, 'Debe haber al menos 1 cupo disponible'], // Validación de mínimo 1
+    min: [1, 'Debe haber al menos 1 cupo disponible'],
   },
   ocupadoPor: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -41,7 +45,7 @@ const turnoMensualSchema = new mongoose.Schema({
   }
 });
 
-//  **Validar que los ocupantes no superen los cupos disponibles antes de guardar**
+// Validación: que los usuarios no superen los cupos
 turnoMensualSchema.pre('save', function (next) {
   if (this.ocupadoPor.length > this.cuposDisponibles) {
     return next(new Error('La cantidad de usuarios no puede exceder los cupos disponibles'));

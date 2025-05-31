@@ -2,6 +2,7 @@ const Turno = require('../models/TurnoMensual');
 const User = require('../models/User');
 const Credito = require('../models/creditos');
 const mongoose = require('mongoose');
+const moment = require('moment');
 
 /* Listar turnos disponibles
 const getTurnosDisponibles = async (req, res) => {
@@ -161,36 +162,72 @@ const getTurnoById = async (req, res) => {
   }
 };
 
-// Crear turno
+// Crear turno (único o repetido)
 const crearTurno = async (req, res) => {
   try {
-    const { sede, nivel, dia, hora, cuposDisponibles } = req.body;
+    const { sede, nivel, dia, hora, cuposDisponibles, fecha, repetirDosMeses } = req.body;
 
-    if (!sede || !nivel || !dia || !hora) {
-      return res.status(400).json({ message: 'Todos los campos son obligatorios' });
+    if (!sede || !nivel || !dia || !hora || (!repetirDosMeses && !fecha)) {
+      return res.status(400).json({ message: 'Faltan datos obligatorios' });
     }
 
     const CUPOS_POR_SEDE = {
       Palermo: 10,
-      Fulgor: 12
+      Fulgor: 12,
     };
 
-    const nuevoTurno = new Turno({
-      sede,
-      nivel,
-      dia,
-      hora,
-      cuposDisponibles: cuposDisponibles !== undefined ? cuposDisponibles : (CUPOS_POR_SEDE[sede] || 0)
-    });
+    const cupos = cuposDisponibles !== undefined ? cuposDisponibles : (CUPOS_POR_SEDE[sede] || 0);
 
-    await nuevoTurno.save();
-    res.status(201).json({ message: 'Turno creado exitosamente', turno: nuevoTurno });
+    let turnosCreados = [];
+
+    if (repetirDosMeses) {
+      // Crear 8 turnos (uno por semana)
+      const hoy = moment().startOf('day');
+      const diaSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+      // Buscar el próximo día deseado (por ejemplo el próximo lunes)
+      let fechaInicial = hoy.clone();
+      while (diaSemana[fechaInicial.day()] !== dia) {
+        fechaInicial.add(1, 'day');
+      }
+
+      for (let i = 0; i < 8; i++) {
+        const nuevaFecha = fechaInicial.clone().add(i, 'weeks').toDate();
+
+        const nuevoTurno = new Turno({
+          sede,
+          nivel,
+          dia,
+          hora,
+          fecha: nuevaFecha,
+          cuposDisponibles: cupos,
+        });
+
+        await nuevoTurno.save();
+        turnosCreados.push(nuevoTurno);
+      }
+
+      return res.status(201).json({ message: 'Turnos creados para 2 meses', turnos: turnosCreados });
+    } else {
+      // Crear un único turno con la fecha proporcionada
+      const nuevoTurno = new Turno({
+        sede,
+        nivel,
+        dia,
+        hora,
+        fecha: new Date(fecha),
+        cuposDisponibles: cupos,
+      });
+
+      await nuevoTurno.save();
+      return res.status(201).json({ message: 'Turno creado exitosamente', turno: nuevoTurno });
+    }
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Error al crear el turno', error: error.message });
   }
 };
-
 
 // Obtener todos los turnos
 const getTodosLosTurnos = async (req, res) => {
