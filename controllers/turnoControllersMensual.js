@@ -162,13 +162,28 @@ const getTurnoById = async (req, res) => {
   }
 };
 
-// Crear turno (único o repetido)
 const crearTurno = async (req, res) => {
   try {
-    const { sede, nivel, dia, hora, cuposDisponibles, fecha, repetirDosMeses } = req.body;
+    const { sede, nivel, hora, cuposDisponibles, fecha, repetirDosMeses } = req.body;
 
-    if (!sede || !nivel || !dia || !hora || (!repetirDosMeses && !fecha)) {
+    if (!sede || !nivel || !hora || !fecha) {
       return res.status(400).json({ message: 'Faltan datos obligatorios' });
+    }
+
+    // Validar valores aceptados para sede y nivel (opcional, pero recomendado)
+    const sedesValidas = ['Palermo', 'Fulgor'];
+    const nivelesValidos = ['Blanco', 'Azul', 'Violeta'];
+
+    if (!sedesValidas.includes(sede)) {
+      return res.status(400).json({ message: 'Sede inválida' });
+    }
+    if (!nivelesValidos.includes(nivel)) {
+      return res.status(400).json({ message: 'Nivel inválido' });
+    }
+
+    const fechaTurno = moment(fecha);
+    if (!fechaTurno.isValid()) {
+      return res.status(400).json({ message: 'La fecha proporcionada no es válida' });
     }
 
     const CUPOS_POR_SEDE = {
@@ -176,30 +191,26 @@ const crearTurno = async (req, res) => {
       Fulgor: 12,
     };
 
-    const cupos = cuposDisponibles !== undefined ? cuposDisponibles : (CUPOS_POR_SEDE[sede] || 0);
+    const cupos = cuposDisponibles !== undefined ? Number(cuposDisponibles) : (CUPOS_POR_SEDE[sede] || 0);
+    if (cupos <= 0) {
+      return res.status(400).json({ message: 'Cupos disponibles debe ser mayor a 0' });
+    }
+
+    const diaSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
     let turnosCreados = [];
 
     if (repetirDosMeses) {
-      // Crear 8 turnos (uno por semana)
-      const hoy = moment().startOf('day');
-      const diaSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-
-      // Buscar el próximo día deseado (por ejemplo el próximo lunes)
-      let fechaInicial = hoy.clone();
-      while (diaSemana[fechaInicial.day()] !== dia) {
-        fechaInicial.add(1, 'day');
-      }
-
       for (let i = 0; i < 8; i++) {
-        const nuevaFecha = fechaInicial.clone().add(i, 'weeks').toDate();
+        const nuevaFecha = fechaTurno.clone().add(i, 'weeks');
+        const diaAuto = diaSemana[nuevaFecha.day()];  // recalcula día para cada fecha
 
         const nuevoTurno = new Turno({
           sede,
           nivel,
-          dia,
+          dia: diaAuto,
           hora,
-          fecha: nuevaFecha,
+          fecha: nuevaFecha.toDate(),
           cuposDisponibles: cupos,
         });
 
@@ -209,13 +220,14 @@ const crearTurno = async (req, res) => {
 
       return res.status(201).json({ message: 'Turnos creados para 2 meses', turnos: turnosCreados });
     } else {
-      // Crear un único turno con la fecha proporcionada
+      const diaAuto = diaSemana[fechaTurno.day()];
+
       const nuevoTurno = new Turno({
         sede,
         nivel,
-        dia,
+        dia: diaAuto,
         hora,
-        fecha: new Date(fecha),
+        fecha: fechaTurno.toDate(),
         cuposDisponibles: cupos,
       });
 
