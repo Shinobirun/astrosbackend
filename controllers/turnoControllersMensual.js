@@ -251,7 +251,7 @@ const getTodosLosTurnos = async (req, res) => {
   }
 };
 
-// Eliminar turno
+// DELETE /api/turnos/:id?modo=uno|todos
 const eliminarTurno = async (req, res) => {
   try {
     if (!['Admin', 'Profesor'].includes(req.user.role)) {
@@ -259,13 +259,33 @@ const eliminarTurno = async (req, res) => {
     }
 
     const { id } = req.params;
-    const turnoEliminado = await Turno.findByIdAndDelete(id);
+    const { modo = 'uno' } = req.query;
 
-    if (!turnoEliminado) {
+    const turno = await Turno.findById(id);
+    if (!turno) {
       return res.status(404).json({ message: 'Turno no encontrado' });
     }
 
-    res.json({ message: 'Turno eliminado correctamente' });
+    if (modo === 'uno') {
+      await Turno.findByIdAndDelete(id);
+      return res.json({ message: 'Turno eliminado correctamente' });
+    }
+
+    if (modo === 'todos') {
+      const turnosEliminados = await Turno.deleteMany({
+        sede: turno.sede,
+        hora: turno.hora,
+        dia: turno.dia,
+        fecha: { $gte: turno.fecha }, // futuros o igual
+      });
+
+      return res.json({
+        message: `Se eliminaron ${turnosEliminados.deletedCount} turnos.`,
+      });
+    }
+
+    return res.status(400).json({ message: 'Modo inválido. Usa "uno" o "todos"' });
+
   } catch (error) {
     res.status(500).json({ message: 'Error al eliminar el turno', error: error.message });
   }
