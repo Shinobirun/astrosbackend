@@ -353,21 +353,35 @@ const eliminarDesdeFecha = async (req, res) => {
 
     if (!sede || !hora || !dia) {
       return res.status(400).json({
-        message: 'Faltan parámetros: sede, hora y dia son obligatorios',
+        message: 'Faltan parámetros: sede, hora y día son obligatorios',
       });
     }
 
     const fechaConsulta = new Date(fecha);
 
-    const resultado = await Turno.deleteMany({
+    // 1. Buscar los turnos que coinciden
+    const turnos = await Turno.find({
       fecha: { $gte: fechaConsulta },
       sede,
       hora,
       dia,
     });
 
+    if (turnos.length === 0) {
+      return res.json({
+        message: `No se encontraron turnos para eliminar desde la fecha ${fecha} con sede ${sede}, hora ${hora} y día ${dia}.`,
+      });
+    }
+
+    // 2. Obtener los IDs de los turnos
+    const idsAEliminar = turnos.map(t => t._id);
+
+    // 3. Eliminar todos los turnos con esos IDs
+    await Turno.deleteMany({ _id: { $in: idsAEliminar } });
+
     res.json({
-      message: `Se eliminaron ${resultado.deletedCount} turnos desde la fecha ${fecha} con sede ${sede}, hora ${hora} y día ${dia}.`,
+      message: `Se eliminaron ${idsAEliminar.length} turnos desde la fecha ${fecha} con sede ${sede}, hora ${hora} y día ${dia}.`,
+      idsEliminados: idsAEliminar,
     });
   } catch (error) {
     res.status(500).json({
@@ -376,6 +390,7 @@ const eliminarDesdeFecha = async (req, res) => {
     });
   }
 };
+
 
 // Asignar turno manualmente
 const asignarTurnoManual = async (req, res) => {
