@@ -25,6 +25,6 @@ router.post('/', protect, adminOrProfesor, crearTurno);                       //
 router.put('/liberar', protect, adminOrProfesor, liberarTurno);               // Liberar un turno
 router.post('/asignar', protect, adminOrProfesor, asignarTurnoManual);        // Tomar un turno
 router.delete('/:id', protect, adminOrProfesor, eliminarTurno);               // Eliminar un turno
-router.delete('/eliminarDesdeFecha', protect, eliminarDesdeFecha);
+router.delete('/eliminarDesdeFecha/:fecha', protect, eliminarDesdeFecha);
 
 module.exports = router;
