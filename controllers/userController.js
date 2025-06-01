@@ -2,6 +2,7 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const Credito = require('../models/creditos');
+const TurnoSemanal = require('../models/TurnoSemanal');
 const TurnoMensual = require('../models/TurnoMensual');
 
 // Función para generar JWT

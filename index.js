@@ -5,7 +5,7 @@ const cors = require('cors');
 const cron = require('node-cron');
 
 // Modelos
-
+const TurnoSemanal = require('./models/TurnoSemanal');
 const TurnoMensual = require('./models/TurnoMensual');
 const Credito = require('./models/creditos');
 
@@ -47,13 +47,12 @@ connectDB().then(async () => {
 const userRoutes = require('./routes/userRoutes.js');
 const turnoRoutes = require('./routes/turnoRoutes');
 const creditoRoutes = require('./routes/creditoRoutes.js');
-
+const turnoRouteSema = require('./routes/turnoRouSema.js');
 
 app.use('/api/users', userRoutes);
 app.use('/api/turnos', turnoRoutes);
 app.use('/api/creditos', creditoRoutes);
-
-
+app.use('/api/turnosSemanales', turnoRouteSema);
 
 // Iniciar servidor
 app.listen(PORT, () => console.log(`🚀 Servidor corriendo en el puerto ${PORT}`));
