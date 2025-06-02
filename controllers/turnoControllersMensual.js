@@ -392,6 +392,8 @@ const eliminarDesdeFecha = async (req, res) => {
 };
 
 
+
+
 // Asignar turno manualmente
 const asignarTurnoManual = async (req, res) => {
   const { turnoId, userId } = req.body;
@@ -400,18 +402,18 @@ const asignarTurnoManual = async (req, res) => {
     return res.status(403).json({ message: 'No tienes permiso para asignar turnos manualmente' });
   }
 
-  try {
-    if (!mongoose.Types.ObjectId.isValid(turnoId) || !mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: 'ID de turno o usuario inválido' });
-    }
+  if (!mongoose.Types.ObjectId.isValid(turnoId) || !mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: 'ID de turno o usuario inválido' });
+  }
 
+  try {
     const turno = await Turno.findById(turnoId);
     if (!turno) return res.status(404).json({ message: 'Turno no encontrado' });
 
-    if (!Array.isArray(turno.ocupadoPor)) {
-      turno.ocupadoPor = [];
-    }
+    const usuario = await User.findById(userId);
+    if (!usuario) return res.status(404).json({ message: 'Usuario no encontrado' });
 
+    turno.ocupadoPor = turno.ocupadoPor || [];
     if (turno.ocupadoPor.includes(userId)) {
       return res.status(400).json({ message: 'El usuario ya tiene este turno asignado' });
     }
@@ -420,28 +422,27 @@ const asignarTurnoManual = async (req, res) => {
       return res.status(400).json({ message: 'No hay cupos disponibles' });
     }
 
-    turno.ocupadoPor.push(userId);
-    await turno.save();
+    usuario.turnosMensuales = usuario.turnosMensuales || [];
+    const yaTieneTurno = usuario.turnosMensuales.some(id => id.toString() === turnoId.toString());
 
-    const usuario = await User.findById(userId);
-    if (!usuario) return res.status(404).json({ message: 'Usuario no encontrado' });
-
-    if (!Array.isArray(usuario.turnosMensuales)) {
-      usuario.turnosMensuales = [];
-    }
-
-    const turnoIdStr = turnoId.toString();
-    if (!usuario.turnosMensuales.some(id => id.toString() === turnoIdStr)) {
+    if (!yaTieneTurno) {
+      turno.ocupadoPor.push(userId);
       usuario.turnosMensuales.push(turnoId);
-      await usuario.save();
+
+      await Promise.all([turno.save(), usuario.save()]);
+
+      return res.status(200).json({ message: 'Turno asignado correctamente' });
+    } else {
+      return res.status(400).json({ message: 'El usuario ya tiene este turno en su lista' });
     }
 
-    res.status(200).json({ message: 'Turno asignado correctamente' });
   } catch (error) {
-    console.error('Error al asignar turno manualmente:', error);
-    res.status(500).json({ message: 'Error al asignar turno manualmente', error: error.message });
+    console.error('❌ Error al asignar turno manualmente:', error);
+    return res.status(500).json({ message: 'Error al asignar turno manualmente', error: error.message });
   }
 };
+
+
 
 
 

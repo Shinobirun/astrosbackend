@@ -266,7 +266,6 @@ const getAllUsers = async (req, res) => {
       })
       .populate({
         path: 'turnosSemanales',
-        model: 'TurnoSemanal',
         select: '-__v',
       })
       .populate({
