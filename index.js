@@ -34,7 +34,7 @@ const turnoRouteSema = require('./routes/turnoRouSema');
 app.use('/api/users', userRoutes);
 app.use('/api/turnos', turnoRoutes);
 app.use('/api/creditos', creditoRoutes);
-app.use('/api/turnosSemanales', turnoRouteSema);
+
 
 // Conexión a la base de datos y tareas iniciales
 connectDB()

@@ -2,7 +2,6 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const Credito = require('../models/creditos');
-const TurnoSemanal = require('../models/TurnoSemanal');
 const TurnoMensual = require('../models/TurnoMensual');
 
 // Función para generar JWT
@@ -108,10 +107,7 @@ const getUserById = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    const turnosSemanales = await TurnoSemanal.find({
-      ocupadoPor: user._id,
-      activo: true,
-    });
+ 
 
     const turnosMensuales = await TurnoMensual.find({
       ocupadoPor: user._id,
@@ -149,11 +145,6 @@ const getUserProfile = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    const turnosSemanales = await TurnoSemanal.find({
-      ocupadoPor: req.user.id,
-      activo: true,
-    });
-
     const turnosMensuales = await TurnoMensual.find({
       ocupadoPor: req.user.id,
       activo: true,
@@ -167,7 +158,6 @@ const getUserProfile = async (req, res) => {
       role: user.role,
       email: user.email,
       creditos: user.creditos,
-      turnosSemanales,
       turnosMensuales,
       activo: user.activo,
       createdAt: user.createdAt,
@@ -192,7 +182,6 @@ const updateUserProfile = async (req, res) => {
     telefono,
     password,
     creditos,
-    turnosSemanales,
     turnosMensuales,
   } = req.body;
 
@@ -216,7 +205,6 @@ const updateUserProfile = async (req, res) => {
     }
     if (password) user.password = password;
     if (creditos) user.creditos = creditos;
-    if (turnosSemanales) user.turnosSemanales = turnosSemanales;
     if (turnosMensuales) user.turnosMensuales = turnosMensuales;
 
     await user.save();
@@ -228,7 +216,6 @@ const updateUserProfile = async (req, res) => {
       lastName: user.lastName,
       role: user.role,
       creditos: user.creditos,
-      turnosSemanales: user.turnosSemanales,
       turnosMensuales: user.turnosMensuales,
     });
   } catch (error) {
@@ -264,10 +251,7 @@ const getAllUsers = async (req, res) => {
         path: 'creditos',
         select: '_id createdAt venceEn usado',
       })
-      .populate({
-        path: 'turnosSemanales',
-        select: '-__v',
-      })
+
       .populate({
         path: 'turnosMensuales',
         model: 'TurnoMensual',
@@ -281,23 +265,7 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-// Obtener turnos semanales por usuario
-const getTurnosSemanalesPorUsuario = async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const user = await User.findById(userId).populate({
-      path: 'turnosSemanales',
-      match: { activo: true },
-    });
 
-    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
-
-    res.json(user.turnosSemanales);
-  } catch (error) {
-    console.error('Error al obtener turnos semanales:', error);
-    res.status(500).json({ message: 'Error al obtener turnos semanales' });
-  }
-};
 
 // Obtener turnos mensuales por usuario
 const getTurnosMensualesPorUsuario = async (req, res) => {
@@ -356,7 +324,6 @@ module.exports = {
   updateUserProfile,
   desactivarUsuario,
   getAllUsers,
-  getTurnosSemanalesPorUsuario,
   getTurnosMensualesPorUsuario,
   getUserById,
   deleteOldestCreditoOfUser
