@@ -196,6 +196,8 @@ const updateUserProfile = async (req, res) => {
     if (username) user.username = username;
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
+    if (email !== undefined) user.email = email;          // ← agregado
+    if (telefono !== undefined) user.telefono = telefono; // ← agregado
     if (role && (req.user.role === "Admin" || req.user.role === "Profesor")) {
       user.role = role;
     }
@@ -211,6 +213,8 @@ const updateUserProfile = async (req, res) => {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
+      email: user.email,           // ← agregado
+      telefono: user.telefono,     // ← agregado
       creditos: user.creditos,
       turnosMensuales: user.turnosMensuales,
     });
