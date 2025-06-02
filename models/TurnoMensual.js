@@ -53,4 +53,4 @@ turnoMensualSchema.pre('save', function (next) {
   next();
 });
 
-module.exports = mongoose.model('TurnoMensual', turnoMensualSchema);
+module.exports = mongoose.models.TurnoMensual || mongoose.model('TurnoMensual', turnoMensualSchema);

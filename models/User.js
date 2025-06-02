@@ -33,9 +33,7 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
-    turnosSemanales: [
-      { type: mongoose.Schema.Types.ObjectId, ref: 'TurnoSemanal' },
-    ],
+    
     turnosMensuales: [
       { type: mongoose.Schema.Types.ObjectId, ref: 'TurnoMensual' },
     ],
@@ -63,4 +61,4 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.models.User || mongoose.model('User', userSchema);

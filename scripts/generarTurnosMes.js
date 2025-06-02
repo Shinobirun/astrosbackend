@@ -1,5 +1,5 @@
 const Turno = require('../models/TurnoMensual');
-const PlantillaTurno = require('../models/plantillaturno'); // Modelo para la plantilla base
+const PlantillaTurno = require('../models/plantillaturno');
 
 const diasSemana = {
   'Lunes': 1,
@@ -22,9 +22,8 @@ const generarFechasDelMes = (anio, mes, diaSemana) => {
   return fechas;
 };
 
-const inicializarTurnosBase = async () => {
+async function generarTurnosMesSiguiente() {
   try {
-    // Traer todos los turnos base desde PlantillaTurno
     const turnosBase = await PlantillaTurno.find().lean();
 
     if (turnosBase.length === 0) {
@@ -33,8 +32,13 @@ const inicializarTurnosBase = async () => {
     }
 
     const hoy = new Date();
-    const anio = hoy.getFullYear();
-    const mes = hoy.getMonth();
+    let anio = hoy.getFullYear();
+    let mes = hoy.getMonth() + 1; // mes siguiente
+
+    if (mes > 11) {
+      mes = 0;
+      anio++;
+    }
 
     const turnosConFechas = [];
 
@@ -54,25 +58,29 @@ const inicializarTurnosBase = async () => {
           dia: base.dia,
           hora: base.hora,
           cuposDisponibles: base.cuposDisponibles,
-          fecha: fecha
+          fecha: fecha,
+          activo: true
         });
       }
     }
 
+    const desde = new Date(anio, mes, 1);
+    const hasta = new Date(anio, mes + 1, 1);
+
     const turnosExistentes = await Turno.countDocuments({
-      fecha: { $gte: new Date(anio, mes, 1), $lt: new Date(anio, mes + 1, 1) }
+      fecha: { $gte: desde, $lt: hasta }
     });
 
     if (turnosExistentes === 0) {
       await Turno.insertMany(turnosConFechas);
-      console.log('✅ Turnos mensuales generados correctamente desde PlantillaTurno.');
+      console.log(`✅ Turnos generados para ${anio}-${mes + 1} correctamente.`);
     } else {
-      console.log('⚠️ Ya existen turnos mensuales para este mes.');
+      console.log('⚠️ Ya existen turnos para el mes siguiente.');
     }
 
   } catch (error) {
-    console.error('❌ Error al generar turnos mensuales:', error);
+    console.error('❌ Error generando turnos:', error);
   }
-};
+}
 
-module.exports = inicializarTurnosBase;
+module.exports = generarTurnosMesSiguiente;

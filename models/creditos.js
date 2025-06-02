@@ -38,4 +38,4 @@ const creditoSchema = new mongoose.Schema(
 creditoSchema.index({ usuario: 1 });
 creditoSchema.index({ venceEn: 1 });
 
-module.exports = mongoose.model('Credito', creditoSchema);
+module.exports = mongoose.models.Credito || mongoose.model('Credito', creditoSchema);
