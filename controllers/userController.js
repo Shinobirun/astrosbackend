@@ -14,35 +14,30 @@ const generateToken = (id) => {
 
 // Registrar o reactivar un usuario (sin créditos)
 const registerUser = async (req, res) => {
-  const { username, email, password, firstName, lastName, role } = req.body;
+  const { username, email, telefono, password, firstName, lastName, role } = req.body;
 
   try {
-    // 1️⃣ Verificar username
+    // 1️⃣ Verificar si ya existe un usuario con ese username
     let user = await User.findOne({ username });
 
     if (user) {
       if (!user.activo) {
         user.activo = true;
         if (password) user.password = password; // será hasheada en el modelo
+        if (email !== undefined) user.email = email; // opcional
+        if (telefono !== undefined) user.telefono = telefono; // opcional
         await user.save();
         return res.json({ message: 'Tu cuenta ha sido reactivada. Por favor, inicia sesión.' });
       }
       return res.status(400).json({ message: 'El nombre de usuario ya está en uso.' });
     }
 
-    // 2️⃣ Verificar email (si se proporcionó)
-    if (email) {
-      const emailTaken = await User.findOne({ email });
-      if (emailTaken) {
-        return res.status(400).json({ message: 'El email ya está en uso.' });
-      }
-    }
-
-    // 3️⃣ Crear usuario (el pre('save') del modelo hashea el password)
+    // 2️⃣ Crear usuario (el pre('save') del modelo hashea el password)
     user = await User.create({
       username,
-      email: email || undefined,
-      password,    // crudo, será encriptado en el middleware
+      email: email || undefined,       // si no se proporciona, queda undefined
+      telefono: telefono || undefined, // si no se proporciona, queda undefined
+      password,                         // crudo, será encriptado en el middleware
       firstName,
       lastName,
       role,
@@ -55,7 +50,6 @@ const registerUser = async (req, res) => {
     res.status(500).json({ message: 'Error al registrar el usuario' });
   }
 };
-
 
 // Login de usuario
 const loginUser = async (req, res) => {
@@ -157,6 +151,7 @@ const getUserProfile = async (req, res) => {
       lastName: user.lastName,
       role: user.role,
       email: user.email,
+      telefono: user.telefono, // ← agregado
       creditos: user.creditos,
       turnosMensuales,
       activo: user.activo,
@@ -169,6 +164,7 @@ const getUserProfile = async (req, res) => {
     res.status(500).json({ message: 'Error al obtener el perfil del usuario' });
   }
 };
+
 
 // Actualizar perfil del usuario
 const updateUserProfile = async (req, res) => {
