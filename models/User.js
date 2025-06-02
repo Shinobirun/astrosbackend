@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const turnoSemanal = require('./TurnoSemanal');
 const TurnoMensual = require('./TurnoMensual');
 
 const userSchema = new mongoose.Schema(

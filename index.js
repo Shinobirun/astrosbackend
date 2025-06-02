@@ -7,7 +7,7 @@ const cors = require('cors');
 const cron = require('node-cron');
 
 // Modelos
-const TurnoSemanal = require('./models/TurnoSemanal');
+
 const TurnoMensual = require('./models/TurnoMensual');
 const Credito = require('./models/creditos');
 const PlantillaTurno = require('./models/plantillaturno'); // corregido
@@ -29,7 +29,7 @@ app.use(cors());
 const userRoutes = require('./routes/userRoutes');
 const turnoRoutes = require('./routes/turnoRoutes');
 const creditoRoutes = require('./routes/creditoRoutes');
-const turnoRouteSema = require('./routes/turnoRouSema');
+
 
 app.use('/api/users', userRoutes);
 app.use('/api/turnos', turnoRoutes);
