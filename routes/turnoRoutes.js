@@ -7,7 +7,8 @@ const {
   getTodosLosTurnos,
   eliminarTurno,
   asignarTurnoManual,
-  eliminarDesdeFecha
+  eliminarDesdeFecha, 
+  getTurnosPorUsuario,
 } = require('../controllers/turnoControllersMensual');
 
 const { protect, adminOrProfesor } = require('../middleware/autMiddleware');
@@ -17,6 +18,7 @@ const router = express.Router();
 // ✅ Rutas accesibles para cualquier usuario logueado
 router.get('/', protect, getTurnosDisponibles);       // Ver turnos disponibles
 router.get('/turno/:id', protect, getTurnoById);      // Ver un turno específico
+router.get('/usuario/:id', protect, getTurnosPorUsuario,); 
 
 
 // 🔒 Rutas solo para Admins o Profesores

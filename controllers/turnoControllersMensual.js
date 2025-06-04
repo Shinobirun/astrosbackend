@@ -133,21 +133,6 @@ const tomarTurno = async (req, res) => {
 };
 */
 
-// Obtener los turnos por usuario
-const getTurnosPorUsuario = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const usuario = await User.findById(id).populate('turnosMensuales');
-
-    if (!usuario) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
-
-    res.json(usuario.turnosMensuales);
-  } catch (error) {
-    res.status(500).json({ message: 'Error obteniendo los turnos', error: error.message });
-  }
-};
 
 // Obtener turno por ID
 const getTurnoById = async (req, res) => {
@@ -442,8 +427,19 @@ const asignarTurnoManual = async (req, res) => {
   }
 };
 
+// Obtener los turnos asignados a un usuario por su ID
+const getTurnosPorUsuario = async (req, res) => {
+  try {
+    const { id } = req.params;
 
+    // Buscar los turnos donde el usuario figure en el array "ocupadoPor"
+    const turnos = await Turno.find({ ocupadoPor: id });
 
+    res.status(200).json(turnos);
+  } catch (error) {
+    res.status(500).json({ message: 'Error obteniendo los turnos del usuario', error: error.message });
+  }
+};
 
 
 module.exports = {
