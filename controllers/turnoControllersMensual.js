@@ -441,6 +441,23 @@ const getTurnosPorUsuario = async (req, res) => {
   }
 };
 
+// Obtener los turnos asignados al usuario autenticado (usando token)
+const getMisTurnos = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const turnos = await Turno.find({ ocupadoPor: userId });
+
+    res.status(200).json(turnos);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error obteniendo los turnos del usuario',
+      error: error.message,
+    });
+  }
+};
+
+
 
 module.exports = {
   getTurnosDisponibles,
@@ -452,5 +469,6 @@ module.exports = {
   eliminarTurno,
   eliminarDesdeFecha,
   asignarTurnoManual,
+  getMisTurnos,
   // tomarTurno // Solo si lo necesitas descomentar
 };
