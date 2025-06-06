@@ -26,7 +26,7 @@ router.get('/misTurnos', protect, getMisTurnos);
 // 🔒 Rutas solo para Admins o Profesores
 router.get('/todos', protect, adminOrProfesor, getTodosLosTurnos);            // Ver todos los turnos
 router.post('/', protect, adminOrProfesor, crearTurno);                       // Crear nuevo turno
-router.put('/liberar', protect, adminOrProfesor, liberarTurno);               // Liberar un turno
+router.put('/liberar', protect, liberarTurno);               // Liberar un turno
 router.post('/asignar', protect, adminOrProfesor, asignarTurnoManual);        // Tomar un turno
 router.delete('/:id', protect, adminOrProfesor, eliminarTurno);               // Eliminar un turno
 router.delete('/eliminarDesdeFecha/:fecha', protect, eliminarDesdeFecha);

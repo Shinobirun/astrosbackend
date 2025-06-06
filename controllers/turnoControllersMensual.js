@@ -208,41 +208,30 @@ const getTodosLosTurnos = async (req, res) => {
 };
 
 // DELETE /api/turnos/:id?modo=uno|todos
-const eliminarTurno = async (req, res) => {
+const liberarTurno = async (req, res) => {
   try {
-    if (!['Admin', 'Profesor'].includes(req.user.role)) {
-      return res.status(403).json({ message: 'No tienes permiso para eliminar turnos' });
-    }
+    const { turnoId } = req.body;
+    const userId = req.user.id; // este viene del middleware protect
 
-    const { id } = req.params;
-    const { modo = 'uno' } = req.query;
-
-    const turno = await Turno.findById(id);
+    const turno = await Turno.findById(turnoId);
     if (!turno) {
       return res.status(404).json({ message: 'Turno no encontrado' });
     }
 
-    if (modo === 'uno') {
-      await Turno.findByIdAndDelete(id);
-      return res.json({ message: 'Turno eliminado correctamente' });
+    // ✅ Validar que el turno le pertenece al usuario logueado
+    if (turno.usuario.toString() !== userId) {
+      return res.status(403).json({ message: 'No estás autorizado para liberar este turno' });
     }
 
-    if (modo === 'todos') {
-      const turnosEliminados = await Turno.deleteMany({
-        sede: turno.sede,
-        hora: turno.hora,
-        dia: turno.dia,
-        fecha: { $gte: turno.fecha }, // futuros o igual
-      });
-      return res.json({
-        message: `Se eliminaron ${turnosEliminados.deletedCount} turnos.`,
-      });
-    }
+    // Liberar el turno
+    turno.usuario = null;
+    turno.estado = 'disponible'; // si manejás un estado
+    await turno.save();
 
-    return res.status(400).json({ message: 'Modo inválido. Usa "uno" o "todos"' });
+    res.status(200).json({ message: 'Turno liberado correctamente' });
   } catch (error) {
-    console.error('Error al eliminar turno:', error);
-    return res.status(500).json({ message: 'Error al eliminar el turno', error: error.message });
+    console.error('Error al liberar turno:', error);
+    res.status(500).json({ message: 'Error del servidor al liberar turno' });
   }
 };
 
