@@ -22,6 +22,7 @@ const getTurnosDisponibles = async (req, res) => {
 // Liberar turno
 // - Admin/Profesor puede liberar cualquiera (pasando userId opcional).
 // - Usuario normal solo puede liberar sus propios turnos.
+
 const liberarTurno = async (req, res) => {
   const { turnoId, userId } = req.body;
   const rol = req.user.role;
@@ -37,42 +38,41 @@ const liberarTurno = async (req, res) => {
       return res.status(404).json({ message: 'Turno no encontrado' });
     }
 
-    // Si se pasa userId y quien solicita no es Admin/Profesor -> 403
-    if (userId && !['Admin', 'Profesor'].includes(rol)) {
+    // ✅ Solo Admin o Profesor pueden liberar turnos de otros
+    if (userId && userId !== idSolicitante && !['Admin', 'Profesor'].includes(rol)) {
       return res.status(403).json({ message: 'No tienes permiso para liberar turnos de otros usuarios' });
     }
 
-    // Determinar a quién vamos a liberar el turno:
-    //  - Si soy Admin/Profesor y me pasan userId, libero para ese userId
-    //  - Si no, libero para quien solicita (idSolicitante)
+    // ✅ Determinar a quién se le va a liberar el turno
     const idAEliminar = (['Admin', 'Profesor'].includes(rol) && userId)
       ? userId
       : idSolicitante;
 
-    // Si soy usuario normal, verificar que el turno realmente me pertenece
+    // ✅ Si el usuario es común, asegurar que el turno le pertenece
     if (!['Admin', 'Profesor'].includes(rol)) {
-      const estaEnTurno = turno.ocupadoPor.some(uid => uid.toString() === idSolicitante);
-      if (!estaEnTurno) {
+      const pertenece = turno.ocupadoPor.some(uid => uid.toString() === idSolicitante);
+      if (!pertenece) {
         return res.status(403).json({ message: 'No puedes liberar un turno que no te pertenece' });
       }
     }
 
-    // Remover idAEliminar del array ocupadoPor
+    // ✅ Remover del array ocupadoPor
     turno.ocupadoPor = turno.ocupadoPor.filter(uid => uid.toString() !== idAEliminar);
     turno.cuposDisponibles += 1;
     await turno.save();
 
-    // Quitar ese turno de user.turnosMensuales
+    // ✅ Remover el turno del array del usuario
     const usuario = await User.findById(idAEliminar);
     if (!usuario) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
+
     usuario.turnosMensuales = usuario.turnosMensuales.filter(
       tid => tid.toString() !== turnoId
     );
     await usuario.save();
 
-    // Crear un nuevo crédito para ese usuario
+    // ✅ Crear un nuevo crédito para ese usuario
     const nuevoCredito = new Credito({ usuario: idAEliminar });
     await nuevoCredito.save();
 
@@ -82,6 +82,7 @@ const liberarTurno = async (req, res) => {
     return res.status(500).json({ message: 'Error al liberar el turno', error: error.message });
   }
 };
+
 
 // Obtener turno por ID
 const getTurnoById = async (req, res) => {
@@ -208,30 +209,41 @@ const getTodosLosTurnos = async (req, res) => {
 };
 
 // DELETE /api/turnos/:id?modo=uno|todos
-const liberarTurno = async (req, res) => {
+const eliminarTurno = async (req, res) => {
   try {
-    const { turnoId } = req.body;
-    const userId = req.user.id; // este viene del middleware protect
+    if (!['Admin', 'Profesor'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'No tienes permiso para eliminar turnos' });
+    }
 
-    const turno = await Turno.findById(turnoId);
+    const { id } = req.params;
+    const { modo = 'uno' } = req.query;
+
+    const turno = await Turno.findById(id);
     if (!turno) {
       return res.status(404).json({ message: 'Turno no encontrado' });
     }
 
-    // ✅ Validar que el turno le pertenece al usuario logueado
-    if (turno.usuario.toString() !== userId) {
-      return res.status(403).json({ message: 'No estás autorizado para liberar este turno' });
+    if (modo === 'uno') {
+      await Turno.findByIdAndDelete(id);
+      return res.json({ message: 'Turno eliminado correctamente' });
     }
 
-    // Liberar el turno
-    turno.usuario = null;
-    turno.estado = 'disponible'; // si manejás un estado
-    await turno.save();
+    if (modo === 'todos') {
+      const turnosEliminados = await Turno.deleteMany({
+        sede: turno.sede,
+        hora: turno.hora,
+        dia: turno.dia,
+        fecha: { $gte: turno.fecha }, // futuros o igual
+      });
+      return res.json({
+        message: `Se eliminaron ${turnosEliminados.deletedCount} turnos.`,
+      });
+    }
 
-    res.status(200).json({ message: 'Turno liberado correctamente' });
+    return res.status(400).json({ message: 'Modo inválido. Usa "uno" o "todos"' });
   } catch (error) {
-    console.error('Error al liberar turno:', error);
-    res.status(500).json({ message: 'Error del servidor al liberar turno' });
+    console.error('Error al eliminar turno:', error);
+    return res.status(500).json({ message: 'Error al eliminar el turno', error: error.message });
   }
 };
 
