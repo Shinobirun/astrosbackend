@@ -33,5 +33,5 @@ router.post('/asignar', protect, adminOrProfesor, asignarTurnoManual);        //
 router.delete('/:id', protect, adminOrProfesor, eliminarTurno);               // Eliminar un turno
 router.delete('/eliminarDesdeFecha/:fecha', protect, eliminarDesdeFecha);
 router.get('/segunRol', protect, getTurnosSegunRol);
-router.post('/turnosMensuales/asignar', protect, asignarTurnoPorAlumno);
+router.post('/asignarAlumno', protect, asignarTurnoPorAlumno);
 module.exports = router;
