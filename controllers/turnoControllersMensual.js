@@ -42,7 +42,7 @@ const liberarTurno = async (req, res) => {
       ? userId
       : idSolicitante;
 
-    // Si el usuario NO es admin/profesor, asegurarse que el turno le pertenezca
+    // Si no es Admin/Profesor, asegurarse que el turno le pertenezca
     if (!['Admin', 'Profesor'].includes(rol)) {
       const estaEnTurno = turno.ocupadoPor.some(uid => uid.toString() === idAEliminar);
       if (!estaEnTurno) {
@@ -61,7 +61,7 @@ const liberarTurno = async (req, res) => {
     turno.cuposDisponibles += 1;
     await turno.save();
 
-    // Removemos el turno del array del usuario
+    // Removemos el turno del usuario y le damos el crédito
     const usuario = await User.findById(idAEliminar);
     if (!usuario) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
@@ -70,16 +70,20 @@ const liberarTurno = async (req, res) => {
     usuario.turnosMensuales = usuario.turnosMensuales.filter(
       tid => tid.toString() !== turnoId
     );
-    await usuario.save();
 
-    // Creamos un nuevo crédito
+    // Crear el crédito
     const nuevoCredito = new Credito({ usuario: idAEliminar });
     await nuevoCredito.save();
 
+    // Asociar el crédito al usuario
+    usuario.creditos.push(nuevoCredito._id);
+    await usuario.save();
+
     return res.status(200).json({ message: 'Turno liberado correctamente y crédito generado' });
+
   } catch (error) {
     console.error('Error al liberar turno:', error);
-    return res.status(500).json({ message: 'Error al liberar el turno', error: error.message });
+    return res.status(500).json({ message: 'Error del servidor' });
   }
 };
 
