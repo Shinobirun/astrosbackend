@@ -407,6 +407,68 @@ const getTurnosSegunRol = async (req, res) => {
   }
 };
 
+//asiganr turno alumno
+
+const asignarTurnoPorAlumno = async (req, res) => {
+  const { turnoId } = req.body;
+  const userId = req.user.id; // viene del token
+
+  if (!mongoose.Types.ObjectId.isValid(turnoId)) {
+    return res.status(400).json({ message: 'ID de turno inválido' });
+  }
+
+  try {
+    const turno = await Turno.findById(turnoId);
+    const usuario = await User.findById(userId);
+
+    if (!turno || !usuario) {
+      return res.status(404).json({ message: 'Turno o usuario no encontrado' });
+    }
+
+    // Validación de rol
+    const puedeTomar = 
+      (usuario.rol === 'blanco' && turno.nivel === 'blanco') ||
+      (usuario.rol === 'azul' && (turno.nivel === 'azul' || turno.nivel === 'blanco')) ||
+      (usuario.rol === 'violeta' && (turno.nivel === 'violeta' || turno.nivel === 'azul'));
+
+    if (!puedeTomar) {
+      return res.status(403).json({ message: 'No puedes tomar un turno de este nivel' });
+    }
+
+    // Verificar que no tenga ya el turno
+    if (usuario.turnosMensuales?.includes(turnoId)) {
+      return res.status(400).json({ message: 'Ya tenés asignado este turno' });
+    }
+
+    // Verificar cupo
+    if (turno.ocupadoPor.length >= turno.cuposDisponibles) {
+      return res.status(400).json({ message: 'No hay cupos disponibles para este turno' });
+    }
+
+    // Verificar créditos
+    if (usuario.creditos.length === 0) {
+      return res.status(400).json({ message: 'No tenés créditos disponibles' });
+    }
+
+    // Asignar
+    turno.ocupadoPor.push(usuario._id);
+    usuario.turnosMensuales.push(turno._id);
+
+    // Eliminar crédito más antiguo
+    usuario.creditos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+    usuario.creditos.shift(); // elimina el más viejo
+
+    await Promise.all([turno.save(), usuario.save()]);
+
+    return res.status(200).json({ message: 'Turno tomado correctamente' });
+
+  } catch (error) {
+    console.error('Error al asignar turno por alumno:', error);
+    return res.status(500).json({ message: 'Error interno', error: error.message });
+  }
+};
+
+
 module.exports = {
   getTurnosDisponibles,
   liberarTurno,
@@ -419,4 +481,5 @@ module.exports = {
   getTurnosPorUsuario,
   getMisTurnos,
   getTurnosSegunRol,
+  asignarTurnoPorAlumno
 };
