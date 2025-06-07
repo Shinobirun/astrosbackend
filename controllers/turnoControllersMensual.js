@@ -427,9 +427,9 @@ const asignarTurnoPorAlumno = async (req, res) => {
 
     // Validación de rol
     const puedeTomar = 
-      (usuario.rol === 'blanco' && turno.nivel === 'blanco') ||
-      (usuario.rol === 'azul' && (turno.nivel === 'azul' || turno.nivel === 'blanco')) ||
-      (usuario.rol === 'violeta' && (turno.nivel === 'violeta' || turno.nivel === 'azul'));
+      (usuario.rol === 'Blanco' && turno.nivel === 'Blanco') ||
+      (usuario.rol === 'Azul' && (turno.nivel === 'Azul' || turno.nivel === 'Blanco')) ||
+      (usuario.rol === 'Violeta' && (turno.nivel === 'Violeta' || turno.nivel === 'Azul'));
 
     if (!puedeTomar) {
       return res.status(403).json({ message: 'No puedes tomar un turno de este nivel' });
