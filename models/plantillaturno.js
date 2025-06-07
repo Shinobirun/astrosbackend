@@ -21,7 +21,12 @@ const PlantillaTurnoSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-
+  ocupadoPor: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  ],
   creadoPor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

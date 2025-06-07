@@ -29,11 +29,14 @@ app.use(cors());
 const userRoutes = require('./routes/userRoutes');
 const turnoRoutes = require('./routes/turnoRoutes');
 const creditoRoutes = require('./routes/creditoRoutes');
+const plantillaRoutes = require('./routes/planillaRoutes');
 
 
 app.use('/api/users', userRoutes);
 app.use('/api/turnos', turnoRoutes);
 app.use('/api/creditos', creditoRoutes);
+app.use('/api/plantilla',plantillaRoutes)
+
 
 
 // Conexión a la base de datos y tareas iniciales
