@@ -28,7 +28,7 @@ router.get('/misTurnos', protect, getMisTurnos);
 router.get('/todos', protect, adminOrProfesor, getTodosLosTurnos);            // Ver todos los turnos
 router.post('/', protect, adminOrProfesor, crearTurno);                       // Crear nuevo turno
 router.put('/liberar', protect, liberarTurno);               // Liberar un turno
-router.post('/asignar', protect, adminOrProfesor, asignarTurnoManual);        // Tomar un turno
+router.post('/asignar', protect, asignarTurnoManual);        // Tomar un turno
 router.delete('/:id', protect, adminOrProfesor, eliminarTurno);               // Eliminar un turno
 router.delete('/eliminarDesdeFecha/:fecha', protect, eliminarDesdeFecha);
 router.get('/segunRol', protect, getTurnosSegunRol);
