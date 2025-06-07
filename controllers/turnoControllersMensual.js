@@ -374,25 +374,35 @@ const getMisTurnos = async (req, res) => {
 
 //Turno según rol
 
-
-const getTurnoByIdSegunRol = async (req, res) => {
-  const userId = req.user.id;
+const getTurnosSegunRol = async (req, res) => {
   const userRole = req.user.role;
 
   try {
-    const turno = await Turno.findById(turnoId);
-    if (!turno) {
-      return res.status(404).json({ message: 'Turno no encontrado' });
+    // Determinar los niveles permitidos según el rol del usuario
+    let nivelesPermitidos = [];
+
+    if (userRole === 'Blanco') {
+      nivelesPermitidos = ['Blanco'];
+    } else if (userRole === 'Azul') {
+      nivelesPermitidos = ['Azul', 'Blanco'];
+    } else if (userRole === 'Violeta') {
+      nivelesPermitidos = ['Violeta', 'Azul'];
+    } else if (['Admin', 'Profesor'].includes(userRole)) {
+      // Acceso total
+      nivelesPermitidos = ['Blanco', 'Azul', 'Violeta'];
+    } else {
+      return res.status(403).json({ message: 'Rol no autorizado para ver turnos' });
     }
 
-    // Validar si el turno corresponde al rol del usuario
-    if (turno.nivel !== rolUsuario) {
-      return res.status(403).json({ message: 'No tenés acceso a este turno' });
-    }
+    const turnos = await Turno.find({
+      nivel: { $in: nivelesPermitidos },
+      activo: true,
+      fecha: { $gte: new Date() }, // solo futuros
+    }).sort({ fecha: 1, hora: 1 });
 
-    res.json(turno);
+    res.json(turnos);
   } catch (error) {
-    console.error('Error al obtener turno por ID según rol:', error);
+    console.error('Error al obtener turnos según rol:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
@@ -408,5 +418,5 @@ module.exports = {
   asignarTurnoManual,
   getTurnosPorUsuario,
   getMisTurnos,
-  getTurnoByIdSegunRol,
+  getTurnosSegunRol,
 };
