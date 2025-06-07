@@ -10,7 +10,7 @@ const cron = require('node-cron');
 
 const TurnoMensual = require('./models/TurnoMensual');
 const Credito = require('./models/creditos');
-const PlantillaTurno = require('./models/plantillaturno'); // corregido
+const Plantilla = require('./models/plantillaturno');
 
 // Scripts y conexión
 const inicializarTurnosBase = require('./scripts/iniciadorTurnosBase');

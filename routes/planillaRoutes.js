@@ -5,6 +5,6 @@ const router = express.Router();
 
 router.post('/asignarDesdePlantilla', protect, asignarUsuarioDesdePlantilla);
 router.get("/:userId", protect, obtenerPlantillaPorUsuario);
-router.get('/turnosSemana', obtenerTurnosSemana);
+router.get('/turnosSemana', protect, obtenerTurnosSemana);
 
 module.exports = router;
