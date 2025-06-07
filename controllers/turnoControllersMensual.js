@@ -376,8 +376,8 @@ const getMisTurnos = async (req, res) => {
 
 
 const getTurnoByIdSegunRol = async (req, res) => {
-  const turnoId = req.params.id;
-  const rolUsuario = req.user.rol;
+  const userId = req.user.id;
+  const userRole = req.user.role;
 
   try {
     const turno = await Turno.findById(turnoId);
