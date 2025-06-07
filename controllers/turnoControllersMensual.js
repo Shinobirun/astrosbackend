@@ -372,6 +372,31 @@ const getMisTurnos = async (req, res) => {
   }
 };
 
+//Turno según rol
+
+
+const getTurnoByIdSegunRol = async (req, res) => {
+  const turnoId = req.params.id;
+  const rolUsuario = req.user.rol;
+
+  try {
+    const turno = await Turno.findById(turnoId);
+    if (!turno) {
+      return res.status(404).json({ message: 'Turno no encontrado' });
+    }
+
+    // Validar si el turno corresponde al rol del usuario
+    if (turno.nivel !== rolUsuario) {
+      return res.status(403).json({ message: 'No tenés acceso a este turno' });
+    }
+
+    res.json(turno);
+  } catch (error) {
+    console.error('Error al obtener turno por ID según rol:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
 module.exports = {
   getTurnosDisponibles,
   liberarTurno,
@@ -383,4 +408,5 @@ module.exports = {
   asignarTurnoManual,
   getTurnosPorUsuario,
   getMisTurnos,
+  getTurnoByIdSegunRol,
 };
