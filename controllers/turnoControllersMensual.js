@@ -38,30 +38,30 @@ const liberarTurno = async (req, res) => {
       return res.status(404).json({ message: 'Turno no encontrado' });
     }
 
-    // ✅ Solo Admin o Profesor pueden liberar turnos de otros
-    if (userId && userId !== idSolicitante && !['Admin', 'Profesor'].includes(rol)) {
-      return res.status(403).json({ message: 'No tienes permiso para liberar turnos de otros usuarios' });
-    }
-
-    // ✅ Determinar a quién se le va a liberar el turno
     const idAEliminar = (['Admin', 'Profesor'].includes(rol) && userId)
       ? userId
       : idSolicitante;
 
-    // ✅ Si el usuario es común, asegurar que el turno le pertenece
+    // Si el usuario NO es admin/profesor, asegurarse que el turno le pertenezca
     if (!['Admin', 'Profesor'].includes(rol)) {
-      const pertenece = turno.ocupadoPor.some(uid => uid.toString() === idSolicitante);
-      if (!pertenece) {
+      const estaEnTurno = turno.ocupadoPor.some(uid => uid.toString() === idAEliminar);
+      if (!estaEnTurno) {
         return res.status(403).json({ message: 'No puedes liberar un turno que no te pertenece' });
       }
     }
 
-    // ✅ Remover del array ocupadoPor
+    // Verificamos si efectivamente estaba asignado
+    const estabaAsignado = turno.ocupadoPor.some(uid => uid.toString() === idAEliminar);
+    if (!estabaAsignado) {
+      return res.status(400).json({ message: 'El usuario no está asignado a este turno' });
+    }
+
+    // Quitamos al usuario del turno
     turno.ocupadoPor = turno.ocupadoPor.filter(uid => uid.toString() !== idAEliminar);
     turno.cuposDisponibles += 1;
     await turno.save();
 
-    // ✅ Remover el turno del array del usuario
+    // Removemos el turno del array del usuario
     const usuario = await User.findById(idAEliminar);
     if (!usuario) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
@@ -72,11 +72,11 @@ const liberarTurno = async (req, res) => {
     );
     await usuario.save();
 
-    // ✅ Crear un nuevo crédito para ese usuario
+    // Creamos un nuevo crédito
     const nuevoCredito = new Credito({ usuario: idAEliminar });
     await nuevoCredito.save();
 
-    return res.status(200).json({ message: 'Turno liberado correctamente y crédito creado' });
+    return res.status(200).json({ message: 'Turno liberado correctamente y crédito generado' });
   } catch (error) {
     console.error('Error al liberar turno:', error);
     return res.status(500).json({ message: 'Error al liberar el turno', error: error.message });
