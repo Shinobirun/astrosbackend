@@ -6,6 +6,9 @@ const moment = require('moment');
 const { startOfDay, parseISO } = require('date-fns');
 const { utcToZonedTime } = require('date-fns-tz');
 
+const ZONA = 'America/Argentina/Buenos_Aires';
+
+
 // Listar turnos disponibles
 const getTurnosDisponibles = async (req, res) => {
   try {
@@ -394,7 +397,7 @@ const getTurnosSegunRol = async (req, res) => {
       return res.status(403).json({ message: 'Rol no autorizado para ver turnos' });
     }
 
-    // 2) Obtener todos los turnos de hoy en adelante (sin hora)
+    // 2) Obtener todos los turnos de hoy en adelante
     const hoyInicio = startOfDay(new Date());
     const turnosRaw = await Turno.find({
       nivel:  { $in: nivelesPermitidos },
@@ -402,22 +405,18 @@ const getTurnosSegunRol = async (req, res) => {
       fecha:  { $gte: hoyInicio }
     }).sort({ fecha: 1, hora: 1 });
 
-    // 3) Filtrar según hora + 1 hora de margen
-    const ahora = utcToZonedTime(new Date(), ZONA).getTime();
-    const margen = 60 * 60 * 1000; // 1 hora en ms
+    // 3) Filtrar los que ya pasaron según fecha + hora local
+    const ahora = new Date().getTime();
 
     const turnosDisponibles = turnosRaw.filter(turno => {
-      // convertimos turno.fecha (guardada a medianoche UTC) a fecha AR
       const utcDate = parseISO(turno.fecha.toISOString());
-      const localDate = utcToZonedTime(utcDate, ZONA);
-      // integramos el campo turno.hora (formato "HH:mm")
+      const localDate = new Date(utcDate);
       const [h, m] = turno.hora.split(':').map(Number);
       localDate.setHours(h, m, 0, 0);
-      // comparamos
-      return localDate.getTime() >= ahora + margen;
+      return localDate.getTime() >= ahora;
     });
 
-    // 4) Enviamos sólo los que pasan el filtro
+    // 4) Enviar resultado
     res.json(turnosDisponibles);
 
   } catch (error) {
@@ -425,6 +424,7 @@ const getTurnosSegunRol = async (req, res) => {
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
+
 
 //asiganr turno alumno
 
