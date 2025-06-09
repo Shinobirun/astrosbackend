@@ -378,9 +378,8 @@ const getTurnosSegunRol = async (req, res) => {
   const userRole = req.user.role;
 
   try {
-    // Determinar los niveles permitidos según el rol del usuario
+    // 1) Determinar niveles permitidos según rol
     let nivelesPermitidos = [];
-
     if (userRole === 'Blanco') {
       nivelesPermitidos = ['Blanco'];
     } else if (userRole === 'Azul') {
@@ -388,18 +387,23 @@ const getTurnosSegunRol = async (req, res) => {
     } else if (userRole === 'Violeta') {
       nivelesPermitidos = ['Violeta', 'Azul'];
     } else if (['Admin', 'Profesor'].includes(userRole)) {
-      // Acceso total
       nivelesPermitidos = ['Blanco', 'Azul', 'Violeta'];
     } else {
       return res.status(403).json({ message: 'Rol no autorizado para ver turnos' });
     }
 
+    // 2) Calcular el inicio de hoy a las 00:00 en la zona del servidor
+    const hoyInicio = startOfDay(new Date());
+
+    // 3) Buscar los turnos: día de hoy o posterior
+    //    y que estén activos, y dentro de los niveles permitidos
     const turnos = await Turno.find({
-      nivel: { $in: nivelesPermitidos },
+      nivel:  { $in: nivelesPermitidos },
       activo: true,
-      fecha: { $gte: new Date() }, // solo futuros
+      fecha:  { $gte: hoyInicio }
     }).sort({ fecha: 1, hora: 1 });
 
+    // 4) Responder con la lista
     res.json(turnos);
   } catch (error) {
     console.error('Error al obtener turnos según rol:', error);
