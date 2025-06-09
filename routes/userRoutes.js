@@ -1,5 +1,5 @@
 const express = require('express');
-const { registerUser, loginUser, getUserProfile, updateUserProfile, desactivarUsuario, getAllUsers,getTurnosSemanalesPorUsuario,getTurnosMensualesPorUsuario } = require('../controllers/userController');
+const { registerUser, loginUser, getUserProfile, updateUserProfile, desactivarUsuario, getAllUsers,getTurnosMensualesPorUsuario } = require('../controllers/userController');
 const { protect, adminOrProfesor, admin, userAccess } = require('../middleware/autMiddleware');
 const { getTurnosPorUsuario } = require("../controllers/turnoControllersMensual");
 
