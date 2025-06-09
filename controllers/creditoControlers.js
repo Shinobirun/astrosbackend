@@ -82,8 +82,14 @@ const deleteCreditoById = async (req, res) => {
 
 const deleteOldestCredito = async (req, res) => {
   try {
-    const userId = req.user.id;
+    console.log('REQ.USER:', req.user);
 
+    const userId = req.user?._id;
+    if (!userId) {
+      return res.status(400).json({ message: 'ID de usuario no encontrado en req.user' });
+    }
+
+    // Buscamos el crédito más viejo de ese usuario
     const oldestCredito = await Credito.findOne({ usuario: userId }).sort({ creadoEn: 1 });
 
     if (!oldestCredito) {
