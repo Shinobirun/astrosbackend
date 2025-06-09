@@ -63,7 +63,6 @@ const liberarTurno = async (req, res) => {
 
     // Quitamos al usuario del turno
     turno.ocupadoPor = turno.ocupadoPor.filter(uid => uid.toString() !== idAEliminar);
-    turno.cuposDisponibles += 1;
     await turno.save();
 
     // Removemos el turno del usuario y le damos el crédito
