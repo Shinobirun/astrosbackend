@@ -3,6 +3,8 @@ const User = require('../models/User');
 const Credito = require('../models/creditos');
 const mongoose = require('mongoose');
 const moment = require('moment');
+const { startOfDay, parseISO } = require('date-fns');
+const { utcToZonedTime } = require('date-fns-tz');
 
 // Listar turnos disponibles
 const getTurnosDisponibles = async (req, res) => {
@@ -378,7 +380,7 @@ const getTurnosSegunRol = async (req, res) => {
   const userRole = req.user.role;
 
   try {
-    // 1) Determinar niveles permitidos según rol
+    // 1) Determinar niveles permitidos
     let nivelesPermitidos = [];
     if (userRole === 'Blanco') {
       nivelesPermitidos = ['Blanco'];
@@ -392,19 +394,32 @@ const getTurnosSegunRol = async (req, res) => {
       return res.status(403).json({ message: 'Rol no autorizado para ver turnos' });
     }
 
-    // 2) Calcular el inicio de hoy a las 00:00 en la zona del servidor
+    // 2) Obtener todos los turnos de hoy en adelante (sin hora)
     const hoyInicio = startOfDay(new Date());
-
-    // 3) Buscar los turnos: día de hoy o posterior
-    //    y que estén activos, y dentro de los niveles permitidos
-    const turnos = await Turno.find({
+    const turnosRaw = await Turno.find({
       nivel:  { $in: nivelesPermitidos },
       activo: true,
       fecha:  { $gte: hoyInicio }
     }).sort({ fecha: 1, hora: 1 });
 
-    // 4) Responder con la lista
-    res.json(turnos);
+    // 3) Filtrar según hora + 1 hora de margen
+    const ahora = utcToZonedTime(new Date(), ZONA).getTime();
+    const margen = 60 * 60 * 1000; // 1 hora en ms
+
+    const turnosDisponibles = turnosRaw.filter(turno => {
+      // convertimos turno.fecha (guardada a medianoche UTC) a fecha AR
+      const utcDate = parseISO(turno.fecha.toISOString());
+      const localDate = utcToZonedTime(utcDate, ZONA);
+      // integramos el campo turno.hora (formato "HH:mm")
+      const [h, m] = turno.hora.split(':').map(Number);
+      localDate.setHours(h, m, 0, 0);
+      // comparamos
+      return localDate.getTime() >= ahora + margen;
+    });
+
+    // 4) Enviamos sólo los que pasan el filtro
+    res.json(turnosDisponibles);
+
   } catch (error) {
     console.error('Error al obtener turnos según rol:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
