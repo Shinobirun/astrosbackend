@@ -1,36 +1,30 @@
 const express = require('express');
-const {
-  getTurnosDisponibles,
-  getTurnoById,
-  crearTurno,
-  getTodosLosTurnos,
-  eliminarTurno,
-  liberarTurno,
-  asignarTurnoManual,
-  getTurnosPorUsuario,
-  eliminarDesdeFecha
-} = require('../controllers/turnoControllersMensual');
-const { protect } = require('../middleware/autMiddleware');
+const { registerUser, loginUser, getUserProfile, updateUserProfile, desactivarUsuario, getAllUsers,getTurnosSemanalesPorUsuario,getTurnosMensualesPorUsuario } = require('../controllers/userController');
+const { protect, adminOrProfesor, admin, userAccess } = require('../middleware/autMiddleware');
+const { getTurnosPorUsuario } = require("../controllers/turnoControllersMensual");
 
 const router = express.Router();
 
-// Rutas accesibles para cualquier usuario autenticado
-router.get('/', protect, getTurnosDisponibles);       // Ver turnos disponibles
-router.get('/turno/:id', protect, getTurnoById);      // Ver un turno específico
+// Rutas de registro y login (públicas)
+router.post('/register', registerUser);
+router.post('/login', loginUser);
 
-// Rutas que cualquier Admin/Profesor debería poder usar para administrar turnos
-router.get('/todos', protect, getTodosLosTurnos);            // Ver todos los turnos
-router.post('/', protect, crearTurno);                       // Crear nuevo turno
-router.delete('/:id', protect, eliminarTurno);               // Eliminar un turno
-router.delete('/eliminarDesdeFecha/:fecha', protect, eliminarDesdeFecha);
-router.post('/asignar', protect, asignarTurnoManual);        // Asignar manualmente
+// Rutas de perfil del usuario (solo para el usuario autenticado)
+router.get('/profile', protect, getUserProfile);
+router.put('/profile', protect, updateUserProfile);
+router.put('/deactivate', protect, desactivarUsuario);
 
-// Liberar turno: 
-//   - Si es Admin o Profesor, podrá liberar cualquier turno.
-//   - Si es usuario normal, podrá liberar sólo sus propios turnos.
-router.put('/liberar', protect, liberarTurno);
+// Rutas protegidas para ver todos los usuarios y turnos (solo Admin o Profesor)
+router.get('/usuarios', protect, adminOrProfesor, getAllUsers);  // Admin/Profesor pueden ver todos los usuarios
+router.get("/turnos", protect, adminOrProfesor, getTurnosPorUsuario); // Admin/Profesor pueden ver todos los turnos
 
-// Obtener mis turnos (los turnos en los que el usuario esté en "ocupadoPor")
-router.get('/misTurnos', protect, getTurnosPorUsuario);
+// Rutas protegidas para obtener turnos de un usuario específico
+// Si el usuario es Admin o Profesor, puede acceder a los turnos de cualquier usuario
+// Si es un usuario normal, solo puede ver sus propios turnos
+router.get("/usuario/:id", protect, userAccess, getTurnosPorUsuario);
+router.get('/turnosSemanales/:id', protect, getTurnosSemanalesPorUsuario);
+
+// Ruta para mensuales
+router.get('/turnosMensuales/:id', protect, getTurnosMensualesPorUsuario);
 
 module.exports = router;
