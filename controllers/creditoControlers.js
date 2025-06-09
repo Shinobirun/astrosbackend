@@ -82,28 +82,36 @@ const deleteCreditoById = async (req, res) => {
 
 const deleteOldestCredito = async (req, res) => {
   try {
-    console.log('REQ.USER:', req.user);
-
     const userId = req.user?._id;
     if (!userId) {
-      return res.status(400).json({ message: 'ID de usuario no encontrado en req.user' });
+      return res.status(400).json({ message: 'ID de usuario no encontrado' });
     }
 
-    // Buscamos el crédito más viejo de ese usuario
-    const oldestCredito = await Credito.findOne({ usuario: userId }).sort({ creadoEn: 1 });
+    // Buscar el usuario con créditos poblados
+    const user = await User.findById(userId).populate('creditos');
 
-    if (!oldestCredito) {
-      return res.status(404).json({ message: 'No hay créditos para eliminar' });
+    if (!user || user.creditos.length === 0) {
+      return res.status(404).json({ message: 'El usuario no tiene créditos' });
     }
 
+    // Ordenar créditos por fecha de creación (más viejo primero)
+    const sortedCreditos = user.creditos.sort((a, b) => new Date(a.creadoEn) - new Date(b.creadoEn));
+    const oldestCredito = sortedCreditos[0];
+
+    // Eliminar de la colección Credito
     await Credito.findByIdAndDelete(oldestCredito._id);
 
-    res.json({ message: 'Crédito más viejo eliminado' });
+    // Eliminar del array del usuario
+    user.creditos.pull(oldestCredito._id);
+    await user.save();
+
+    res.json({ message: 'Crédito más viejo eliminado correctamente' });
   } catch (error) {
     console.error('Error en deleteOldestCredito:', error);
     res.status(500).json({ message: 'Error al eliminar el crédito más viejo', error });
   }
 };
+
 
 
 
