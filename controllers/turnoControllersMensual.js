@@ -413,55 +413,65 @@ const asignarTurnoPorAlumno = async (req, res) => {
   const { turnoId } = req.body;
   const userId = req.user.id; // viene del token
 
+  // 1) Validar que turnoId sea ObjectId
   if (!mongoose.Types.ObjectId.isValid(turnoId)) {
     return res.status(400).json({ message: 'ID de turno inválido' });
   }
 
   try {
-    const turno = await Turno.findById(turnoId);
-    const usuario = await User.findById(userId);
-
+    // 2) Cargar turno y usuario
+    const [turno, usuario] = await Promise.all([
+      Turno.findById(turnoId),
+      User.findById(userId)
+    ]);
     if (!turno || !usuario) {
       return res.status(404).json({ message: 'Turno o usuario no encontrado' });
     }
 
-    // Validación de rol
+    // 3) Validar rol / nivel
     const puedeTomar = 
-      (usuario.role === 'Blanco' && turno.nivel === 'Blanco') ||
-      (usuario.role === 'Azul' && (turno.nivel === 'Azul' || turno.nivel === 'Blanco')) ||
-      (usuario.role === 'Violeta' && (turno.nivel === 'Violeta' || turno.nivel === 'Azul'));
-
+      (usuario.role === 'Blanco'  && turno.nivel === 'Blanco')  ||
+      (usuario.role === 'Azul'    && ['Blanco','Azul'].includes(turno.nivel)) ||
+      (usuario.role === 'Violeta' && ['Azul','Violeta'].includes(turno.nivel));
     if (!puedeTomar) {
       return res.status(403).json({ message: 'No puedes tomar un turno de este nivel' });
     }
 
-    // Verificar que no tenga ya el turno
-    if (usuario.turnosMensuales?.includes(turnoId)) {
+    // 4) Verificar turno repetido
+    if (usuario.turnosMensuales.includes(turnoId)) {
       return res.status(400).json({ message: 'Ya tenés asignado este turno' });
     }
 
-    // Verificar cupo
+    // 5) Verificar cupo
     if (turno.ocupadoPor.length >= turno.cuposDisponibles) {
-      return res.status(400).json({ message: 'No hay cupos disponibles para este turno' });
+      return res.status(400).json({ message: 'No hay cupos disponibles' });
     }
 
-    // Verificar créditos
-    if (usuario.creditos.length === 0) {
+    // 6) Verificar créditos disponibles
+    if (!Array.isArray(usuario.creditos) || usuario.creditos.length === 0) {
       return res.status(400).json({ message: 'No tenés créditos disponibles' });
     }
 
-    // Asignar
+    // 7) Asignar el turno al usuario
     turno.ocupadoPor.push(usuario._id);
     usuario.turnosMensuales.push(turno._id);
 
-    // Eliminar crédito más antiguo
-    usuario.creditos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-    usuario.creditos.shift(); // elimina el más viejo
+    // 8) Consumir y eliminar el crédito más antiguo directamente en la colección
+    const oldest = await Credito.findOneAndDelete(
+      { usuario: userId },
+      { sort: { creadoEn: 1 } }   // el más antiguo
+    );
+    if (oldest) {
+      // 9) Quitar esa referencia del array del usuario
+      usuario.creditos = usuario.creditos.filter(
+        id => id.toString() !== oldest._id.toString()
+      );
+    }
 
-    await Promise.all([turno.save(), usuario.save()]);
+    // 10) Guardar ambos cambios (turno y usuario)
+    await Promise.all([ turno.save(), usuario.save() ]);
 
-    return res.status(200).json({ message: 'Turno tomado correctamente' });
-
+    return res.status(200).json({ message: 'Turno tomado y crédito consumido correctamente' });
   } catch (error) {
     console.error('Error al asignar turno por alumno:', error);
     return res.status(500).json({ message: 'Error interno', error: error.message });
