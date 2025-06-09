@@ -22,7 +22,7 @@ router.get("/turnos", protect, adminOrProfesor, getTurnosPorUsuario); // Admin/P
 // Si el usuario es Admin o Profesor, puede acceder a los turnos de cualquier usuario
 // Si es un usuario normal, solo puede ver sus propios turnos
 router.get("/usuario/:id", protect, userAccess, getTurnosPorUsuario);
-router.get('/turnosSemanales/:id', protect, getTurnosSemanalesPorUsuario);
+
 
 // Ruta para mensuales
 router.get('/turnosMensuales/:id', protect, getTurnosMensualesPorUsuario);
