@@ -24,11 +24,13 @@ router.delete('/vencidos', protect, deleteExpiredCreditos);
 // Obtener crédito por ID
 router.get('/:id', protect, getCreditoById);
 
-// ** NUEVA RUTA: eliminar crédito más viejo del usuario logueado **
+// Eliminar crédito más viejo del usuario logueado (la ruta específica va primero)
 router.delete('/oldest', protect, deleteOldestCredito);
 
-// Eliminar crédito por ID
+// Eliminar crédito por ID (ruta genérica va al final)
 router.delete('/:id', protect, deleteCreditoById);
+
+module.exports = router;
 
 
 
