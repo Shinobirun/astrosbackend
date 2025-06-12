@@ -11,6 +11,7 @@ const cron = require('node-cron');
 const TurnoMensual = require('./models/TurnoMensual');
 const Credito = require('./models/creditos');
 const Plantilla = require('./models/plantillaturno');
+const plantillaTurnoUsuarioRoutes = require('./routes/plantillaTurnoUsuario');
 
 // Scripts y conexión
 const inicializarTurnosBase = require('./scripts/iniciadorTurnosBase');
@@ -36,7 +37,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/turnos', turnoRoutes);
 app.use('/api/creditos', creditoRoutes);
 app.use('/api/plantilla',plantillaRoutes)
-
+app.use('/api/plantilla-turnos-usuario', plantillaTurnoUsuarioRoutes);
 
 
 // Conexión a la base de datos y tareas iniciales
