@@ -53,8 +53,22 @@ const eliminarPlantillaTurnoUsuario = async (req, res) => {
   }
 };
 
+const PlantillaTurno = require('../models/plantillaturno');
+
+const obtenerPlantillaGeneral = async (req, res) => {
+  try {
+    const plantillas = await PlantillaTurno.find().populate('ocupadoPor', 'first_name last_name email');
+    res.status(200).json(plantillas);
+  } catch (error) {
+    console.error("Error al obtener la plantilla general:", error);
+    res.status(500).json({ error: 'Error del servidor al obtener la plantilla' });
+  }
+};
+
+
 module.exports = {
   crearPlantillaTurnoUsuario,
   listarPlantillasTurnoUsuario,
-  eliminarPlantillaTurnoUsuario
+  eliminarPlantillaTurnoUsuario,
+  obtenerPlantillaGeneral
 };
