@@ -37,7 +37,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/turnos', turnoRoutes);
 app.use('/api/creditos', creditoRoutes);
 app.use('/api/plantilla',plantillaRoutes)
-app.use('/api/plantilla-turnos-usuario', plantillaTurnoUsuarioRoutes);
+app.use('/api/plantillaTurnosUsuario', plantillaTurnoUsuarioRoutes);
 
 
 // Conexión a la base de datos y tareas iniciales
